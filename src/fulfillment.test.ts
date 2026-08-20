@@ -5,6 +5,7 @@ import { createMailMyPDFFulfillment } from './fulfillment'
 describe('MailMyPDF fulfillment adapter', () => {
   const input = {
     requestId: 'req-1',
+    idempotencyKey: 'records-req-1',
     recipient: {
       name: 'County Clerk',
       address1: '1 Main St',
@@ -16,7 +17,7 @@ describe('MailMyPDF fulfillment adapter', () => {
     mailingClass: 'certified' as const,
   }
 
-  it('sends authenticated JSON and returns provider submission data', async () => {
+  it('sends authenticated JSON with mandatory idempotency and returns provider submission data', async () => {
     const calls: Request[] = []
     const fetcher: typeof fetch = async (url, init) => {
       const req = new Request(url, init)
@@ -33,7 +34,19 @@ describe('MailMyPDF fulfillment adapter', () => {
     assert.equal(result.submissionId, 'sub-1')
     assert.equal(calls.length, 1)
     assert.equal(calls[0].headers.get('authorization'), 'Bearer secret')
+    assert.equal(calls[0].headers.get('idempotency-key'), 'records-req-1')
     assert.equal(calls[0].method, 'POST')
+  })
+
+  it('rejects missing idempotency keys before calling the provider', async () => {
+    let called = false
+    const fetcher: typeof fetch = async () => {
+      called = true
+      return new Response('{}', { status: 200 })
+    }
+    const adapter = createMailMyPDFFulfillment(fetcher, 'https://mail.example', 'secret')
+    await assert.rejects(() => adapter.submit({ ...input, idempotencyKey: '' }), /idempotencyKey is required/)
+    assert.equal(called, false)
   })
 
   it('rejects non-success provider responses', async () => {
