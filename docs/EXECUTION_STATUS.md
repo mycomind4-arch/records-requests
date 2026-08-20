@@ -10,6 +10,7 @@ Updated: 2026-08-20
 - Full Records Gold Standard lifecycle contract with explicit pre-send gating.
 - D1-compatible `RequestStateRepository` with request, item, immutable audit-event, and fulfillment-event writes.
 - Atomic lifecycle transitions: `draft → validated → review → approved → queued → submitted → tracking → completed|failed`.
+- Database-level D1 status constraints now mirror the application lifecycle and prevent unsupported persisted states.
 - Provider failures can terminate `queued` requests instead of leaving them stranded.
 - Explicit MailMyPDF fulfillment adapter with authenticated request handling, provider-response validation, and tracking/proof identifiers.
 - Signed MailMyPDF webhook verification using HMAC-SHA256.
@@ -17,6 +18,7 @@ Updated: 2026-08-20
 - Deterministic approved-request PDF renderer with SHA-256 content attestation.
 - Cloudflare/OpenNext runtime contract defining the required `RECORDS_DB` binding and fulfillment controls.
 - Deployment script fails closed when placeholder D1 IDs remain.
+- Repository now has an executable `npm test`/Vitest command for the domain, migration, repository, fulfillment, webhook, and Gold Standard regression suites.
 
 ## Still blocked for production certification
 
@@ -32,6 +34,9 @@ A deterministic PDF renderer now produces stable bytes and SHA-256 attestations.
 ### Tracking/proof provider integration
 The signed callback endpoint exists and records delivery/failure evidence, but the deployed MailMyPDF provider must be configured with the callback secret and actual callback URL, and its real payload schema must be verified.
 
+### Dependency lock/install verification
+`package.json` now includes Vitest, but this repository does not yet include a committed package lockfile generated after that dependency change. A normal networked install should generate and commit the chosen lockfile before deployment certification.
+
 ### Integration certification
 There is no verified deployed end-to-end test against real D1 + real MailMyPDF. CI/status reporting is also not currently available through the GitHub connector for these commits.
 
@@ -39,11 +44,12 @@ There is no verified deployed end-to-end test against real D1 + real MailMyPDF. 
 
 1. Provision staging D1 and replace the placeholder IDs in `wrangler.jsonc`.
 2. Apply the SQL migration/schema to staging and run the integration suite against D1.
-3. Configure `MAILMYPDF_API_KEY` and the real fulfillment endpoint in a non-production environment.
-4. Configure `MAILMYPDF_WEBHOOK_SECRET` and register the callback endpoint with MailMyPDF.
-5. Wire the approved-request UI/service to `renderRecordsRequestPdf` + `attestRecordsRequestPdf`, persist the document hash, and send only that attested PDF.
-6. Run one authorized staging transaction and verify `approved → queued → submitted → tracking → completed` plus proof reconciliation.
-7. Promote infrastructure and credentials to production only after staging passes.
+3. Run a normal networked package install and commit the resulting lockfile for the new Vitest dependency.
+4. Configure `MAILMYPDF_API_KEY` and the real fulfillment endpoint in a non-production environment.
+5. Configure `MAILMYPDF_WEBHOOK_SECRET` and register the callback endpoint with MailMyPDF.
+6. Wire the approved-request UI/service to `renderRecordsRequestPdf` + `attestRecordsRequestPdf`, persist the document hash, and send only that attested PDF.
+7. Run one authorized staging transaction and verify `approved → queued → submitted → tracking → completed` plus proof reconciliation.
+8. Promote infrastructure and credentials to production only after staging passes.
 
 ## Certification rule
 
