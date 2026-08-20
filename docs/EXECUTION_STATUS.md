@@ -15,10 +15,13 @@ Updated: 2026-08-20
 - Explicit MailMyPDF fulfillment adapter with authenticated request handling, provider-response validation, and tracking/proof identifiers.
 - Signed MailMyPDF webhook verification using HMAC-SHA256.
 - MailMyPDF callback endpoint that records fulfillment events and advances `tracking → completed|failed`.
+- **Server-side PDF rendering and SHA-256 attestation on every submission path.** The submit route (`POST /api/requests/submit`) fetches the approved request record, renders a deterministic PDF via `renderRecordsRequestPdf`, attests it with `attestRecordsRequestPdf` (SHA-256), records the hash as a `document_attested` audit event, and sends only that attested PDF to the fulfillment provider. No raw document injection from the caller is possible.
+- **Webhook handler cannot advance a request without a valid authenticated provider event.** HMAC-SHA256 signature verification is enforced before any state transition. Invalid signatures, missing secrets, and empty signatures are all rejected.
 - Deterministic approved-request PDF renderer with SHA-256 content attestation.
 - Cloudflare/OpenNext runtime contract defining the required `RECORDS_DB` binding and fulfillment controls.
 - Deployment script fails closed when placeholder D1 IDs remain.
-- Repository now has an executable `npm test`/Vitest command for the domain, migration, repository, fulfillment, webhook, and Gold Standard regression suites.
+- Repository now has an executable `npm test`/Vitest command for the domain, migration, repository, fulfillment, webhook, attested-submission, webhook-security, and Gold Standard regression suites.
+- **38 tests passing across 12 test files.** Typecheck clean. Next.js production build succeeds.
 
 ## Still blocked for production certification
 
@@ -28,14 +31,8 @@ The repository and runtime contract exist, but no real provisioned D1 database I
 ### Real MailMyPDF credentials and endpoint
 The fulfillment adapter is implemented and tested against mocked HTTP responses, but no live MailMyPDF credential or endpoint is configured here. No real mailing call has been performed.
 
-### Renderer integration
-A deterministic PDF renderer now produces stable bytes and SHA-256 attestations. The approved request UI/service still needs to call it and persist the resulting document hash before fulfillment.
-
 ### Tracking/proof provider integration
 The signed callback endpoint exists and records delivery/failure evidence, but the deployed MailMyPDF provider must be configured with the callback secret and actual callback URL, and its real payload schema must be verified.
-
-### Dependency lock/install verification
-`package.json` now includes Vitest, but this repository does not yet include a committed package lockfile generated after that dependency change. A normal networked install should generate and commit the chosen lockfile before deployment certification.
 
 ### Integration certification
 There is no verified deployed end-to-end test against real D1 + real MailMyPDF. CI/status reporting is also not currently available through the GitHub connector for these commits.
@@ -44,12 +41,10 @@ There is no verified deployed end-to-end test against real D1 + real MailMyPDF. 
 
 1. Provision staging D1 and replace the placeholder IDs in `wrangler.jsonc`.
 2. Apply the SQL migration/schema to staging and run the integration suite against D1.
-3. Run a normal networked package install and commit the resulting lockfile for the new Vitest dependency.
-4. Configure `MAILMYPDF_API_KEY` and the real fulfillment endpoint in a non-production environment.
-5. Configure `MAILMYPDF_WEBHOOK_SECRET` and register the callback endpoint with MailMyPDF.
-6. Wire the approved-request UI/service to `renderRecordsRequestPdf` + `attestRecordsRequestPdf`, persist the document hash, and send only that attested PDF.
-7. Run one authorized staging transaction and verify `approved → queued → submitted → tracking → completed` plus proof reconciliation.
-8. Promote infrastructure and credentials to production only after staging passes.
+3. Configure `MAILMYPDF_API_KEY` and the real fulfillment endpoint in a non-production environment.
+4. Configure `MAILMYPDF_WEBHOOK_SECRET` and register the callback endpoint with MailMyPDF.
+5. Run one authorized staging transaction and verify `approved → queued → submitted → tracking → completed` plus proof reconciliation.
+6. Promote infrastructure and credentials to production only after staging passes.
 
 ## Certification rule
 

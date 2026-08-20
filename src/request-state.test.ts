@@ -1,17 +1,17 @@
-import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import { describe, it } from 'vitest'
+import assert from "node:assert/strict";
 import { approveRequest, canSubmit, submitApprovedRequest, type RequestRecord, type RequestStateRepository } from './request-state'
 
 function repo(initial: RequestRecord): RequestStateRepository & { value: RequestRecord } {
   const state = { value: initial }
   return {
-    get: async (id) => (id === state.value.id ? state.value : null),
-    setStatus: async (id, status, patch = {}) => {
+    get: async (id: string) => (id === state.value.id ? state.value : null),
+    setStatus: async (id: string, status: string, patch: Record<string, unknown> = {}) => {
       if (id !== state.value.id) throw new Error('not found')
-      state.value = { ...state.value, ...patch, status }
+      state.value = { ...state.value, ...patch, status: status as RequestRecord['status'] }
       return state.value
     },
-    ...state,
+    get value() { return state.value },
   }
 }
 

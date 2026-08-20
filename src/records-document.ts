@@ -52,7 +52,7 @@ export function renderRecordsRequestPdf(input: RecordsDocumentInput): Uint8Array
 
 export async function attestRecordsRequestPdf(input: RecordsDocumentInput): Promise<{ bytes: Uint8Array; sha256: string }> {
   const bytes = renderRecordsRequestPdf(input)
-  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  const digest = await crypto.subtle.digest('SHA-256', bytes as BufferSource)
   const sha256 = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
   return { bytes, sha256 }
 }

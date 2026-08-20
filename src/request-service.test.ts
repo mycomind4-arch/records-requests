@@ -1,5 +1,5 @@
-import test from 'node:test'
-import assert from 'node:assert/strict'
+import { test, expect } from 'vitest'
+import assert from "node:assert/strict";
 import { buildRequestAuditPayload, validateCreateRequest } from './request-service'
 
 test('validateCreateRequest accepts a complete request', () => {

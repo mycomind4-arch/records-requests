@@ -17,8 +17,14 @@ function hex(bytes: Uint8Array): string {
 }
 
 export async function signFulfillmentWebhook(secret: string, rawBody: string): Promise<string> {
-  const key = await crypto.subtle.importKey('raw', toBytes(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
-  const signature = await crypto.subtle.sign('HMAC', key, toBytes(rawBody))
+  const key = await crypto.subtle.importKey(
+    'raw',
+    toBytes(secret) as BufferSource,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const signature = await crypto.subtle.sign('HMAC', key, toBytes(rawBody) as BufferSource)
   return hex(new Uint8Array(signature))
 }
 

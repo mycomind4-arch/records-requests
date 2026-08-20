@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import { describe, expect, it } from 'vitest'
+import assert from "node:assert/strict";
 import { attestApprovedDocument, sha256Hex } from './document-integrity'
 
 describe('approved document integrity', () => {

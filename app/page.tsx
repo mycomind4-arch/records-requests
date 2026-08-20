@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { workflows } from './workflows/[slug]/page'
+import { workflows } from './workflows/workflow-data'
 
 export const metadata = { title: 'Public Records Requests | Request, Track & Audit Government Records', description: 'Find the right public-records workflow, build a precise request, track agency responses, organize productions, and audit what you received.', openGraph: { title: 'Public Records Requests | Records Requests', description: 'A directory of focused workflows for requesting, tracking, and auditing government records.' } }
 

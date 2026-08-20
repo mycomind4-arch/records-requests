@@ -1,18 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-
-const workflows = [
-  { slug: 'public-records-request', title: 'Public Records Request', category: 'Start here', intent: 'public records request', description: 'Turn a plain-English objective into a precise request with record categories, date ranges, custodians, identifiers, format requirements, and exclusions.', bestFor: ['General public records', 'Agency records', 'Open records requests'], cta: 'Build a records request' },
-  { slug: 'police-records', title: 'Police Records Request', category: 'Law enforcement', intent: 'how to get a police report', description: 'Request incident reports, arrest records, dispatch materials, body-camera records, and related police records with enough specificity to make the request searchable.', bestFor: ['Incident reports', 'Police reports', 'Arrest records', 'Body-camera and related records'], cta: 'Request police records' },
-  { slug: 'court-records', title: 'Court Records Request', category: 'Courts', intent: 'how to get court records', description: 'Organize a request for case files, docket materials, filings, exhibits, and other court-held records while preserving case identifiers and date ranges.', bestFor: ['Case files', 'Dockets', 'Court filings', 'Exhibits'], cta: 'Request court records' },
-  { slug: 'property-records', title: 'Property & Parcel Records', category: 'Property', intent: 'request property records', description: 'Build a targeted request for property, parcel, assessor, recorder, ownership, and related public records tied to a property or parcel.', bestFor: ['Property files', 'Parcel records', 'Ownership records', 'Recorder records'], cta: 'Request property records' },
-  { slug: 'code-enforcement-records', title: 'Code Enforcement Records', category: 'Property', intent: 'code enforcement records request', description: 'Request violation histories, inspection records, notices, photographs, communications, complaints, and enforcement files for a property or case.', bestFor: ['Violation files', 'Inspection records', 'Complaints', 'Enforcement communications'], cta: 'Request code records' },
-  { slug: 'permit-inspection-records', title: 'Permit & Inspection Records', category: 'Property', intent: 'permit records request', description: 'Target permits, plans, inspection reports, correction notices, approvals, and related building-department records with project identifiers and date ranges.', bestFor: ['Building permits', 'Inspection reports', 'Plans', 'Correction notices'], cta: 'Request permit records' },
-  { slug: 'government-emails', title: 'Government Emails & Communications', category: 'Communications', intent: 'government email records request', description: 'Structure an email and communications request around custodians, domains, date ranges, subjects, projects, and identifiers so the scope is usable by the responding agency.', bestFor: ['Government emails', 'Agency correspondence', 'Text and communication records'], cta: 'Request communications' },
-  { slug: 'planning-records', title: 'Planning & Development Records', category: 'Planning', intent: 'planning records request', description: 'Request planning applications, staff reports, zoning materials, development correspondence, meeting records, and related agency files.', bestFor: ['Planning files', 'Zoning records', 'Development applications', 'Staff reports'], cta: 'Request planning records' },
-  { slug: 'case-records', title: 'Records About a Specific Case', category: 'Case research', intent: 'records about a specific case', description: 'Build a case-centered request that connects names, addresses, case numbers, dates, departments, and referenced documents into one coherent records scope.', bestFor: ['Enforcement cases', 'Administrative cases', 'Agency investigations', 'Cross-department records'], cta: 'Build a case request' },
-  { slug: 'foia-request', title: 'FOIA / Federal Records Request', category: 'Federal', intent: 'how do I file a FOIA request', description: 'Prepare a federal records request with a clear description of the records, date range, custodians or systems when known, and the requester information needed for the agency.', bestFor: ['Federal agencies', 'FOIA requests', 'Federal records'], cta: 'Build a FOIA request' },
-]
+import { workflows } from '../workflow-data'
 
 export function generateStaticParams() { return workflows.map(({ slug }) => ({ slug })) }
 
@@ -41,5 +29,3 @@ export default async function WorkflowPage({ params }: { params: Promise<{ slug:
     <section className="final"><div className="eyebrow">READY TO BUILD IT</div><h2>Turn this search into an actual request.</h2><p>Start with the objective in plain English. The workspace handles the structure.</p><Link className="primary" href="/dashboard">Open the request builder →</Link></section>
   </main>
 }
-
-export { workflows }

@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import { describe, it } from 'vitest'
+import assert from "node:assert/strict";
 import {
   RECORDS_GOLD_STAGES,
   hasRecordsPreSendGate,
@@ -9,7 +9,9 @@ import {
 } from './gold-standard'
 
 const makeDependencies = (): RecordsGoldDependencies =>
-  Object.fromEntries(RECORDS_GOLD_STAGES.map((stage) => [stage, async () => true])) as RecordsGoldDependencies
+  Object.fromEntries(
+    RECORDS_GOLD_STAGES.map((stage) => [stage, async () => ({ sourceIds: ['src-1'] })]),
+  ) as RecordsGoldDependencies
 
 describe('records-request gold standard lifecycle', () => {
   it('requires every stage to pass for completion', async () => {
@@ -22,7 +24,7 @@ describe('records-request gold standard lifecycle', () => {
 
   it('blocks before later stages when a gate fails', async () => {
     const dependencies = makeDependencies()
-    dependencies.validate = async () => false
+    dependencies.validate = async () => ({ sourceIds: [] })
 
     const result = await runRecordsGoldWorkflow(dependencies)
     assert.equal(result.status, 'blocked')

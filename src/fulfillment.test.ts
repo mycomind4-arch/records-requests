@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import { describe, expect, it } from 'vitest'
+import assert from "node:assert/strict";
 import { createMailMyPDFFulfillment } from './fulfillment'
 
 describe('MailMyPDF fulfillment adapter', () => {

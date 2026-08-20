@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import { describe, expect, it } from 'vitest'
+import assert from "node:assert/strict";
 import { canTransition, createD1RequestRepository, type D1DatabaseLike, type D1Statement } from './request-repository'
 
 const makeDb = () => {
@@ -12,9 +12,9 @@ const makeDb = () => {
           calls.push({ sql, values })
           return statement
         },
-        async first() {
-          const id = calls.at(-1)?.values?.[0]
-          return typeof id === 'string' ? rows.get(id) ?? null : null
+        async first<T = unknown>(): Promise<T | null> {
+          const id = calls.at(-1)?.values?.[0] as string | undefined
+          return (typeof id === 'string' ? rows.get(id) ?? null : null) as T | null
         },
         async all() { return { results: [] } },
         async run() {
