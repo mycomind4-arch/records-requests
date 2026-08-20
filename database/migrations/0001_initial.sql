@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS requests(
   title TEXT NOT NULL,
   agency TEXT NOT NULL,
   jurisdiction TEXT,
-  status TEXT NOT NULL DEFAULT 'draft',
+  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','validated','review','approved','queued','submitted','tracking','completed','failed')),
   purpose TEXT,
   scope_json TEXT,
   requested_at TEXT,
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS request_items(
   custodian TEXT,
   system_hint TEXT,
   format TEXT,
-  status TEXT NOT NULL DEFAULT 'unanswered'
+  status TEXT NOT NULL DEFAULT 'unanswered' CHECK (status IN ('unanswered','requested','received','reviewed','complete','incomplete'))
 );
 
 CREATE TABLE IF NOT EXISTS communications(
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS evidence(
   page_reference TEXT,
   extracted_text TEXT,
   provenance_json TEXT,
-  review_status TEXT NOT NULL DEFAULT 'unreviewed',
+  review_status TEXT NOT NULL DEFAULT 'unreviewed' CHECK (review_status IN ('unreviewed','verified','rejected')),
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS audit_events(
   id TEXT PRIMARY KEY,
   request_id TEXT REFERENCES requests(id),
   event_type TEXT NOT NULL,
-  actor_type TEXT NOT NULL,
+  actor_type TEXT NOT NULL CHECK (actor_type IN ('system','user','admin','scheduled_job','api_call')),
   actor_id TEXT,
   payload_json TEXT NOT NULL,
   previous_hash TEXT,
@@ -109,3 +109,4 @@ CREATE INDEX IF NOT EXISTS idx_comms_request_date ON communications(request_id,o
 CREATE INDEX IF NOT EXISTS idx_evidence_request ON evidence(request_id);
 CREATE INDEX IF NOT EXISTS idx_findings_request ON findings(request_id,status);
 CREATE INDEX IF NOT EXISTS idx_actions_request_due ON actions(request_id,due_at);
+CREATE INDEX IF NOT EXISTS idx_requests_status_updated ON requests(status,updated_at);
