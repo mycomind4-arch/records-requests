@@ -23,6 +23,18 @@ type SubmitBody = {
   mailingClass?: 'certified' | 'registered' | 'first_class'
 }
 
+async function reconcileFailure(repository: Awaited<ReturnType<typeof getRequestStateRepository>>, id: string, actor: string, error: unknown) {
+  const current = await repository?.getRequest(id)
+  if (current?.status === 'queued') {
+    try {
+      await repository.transition(id, 'queued', 'failed', actor)
+    } catch {
+      // Preserve the original failure; a concurrent callback may already have reconciled the state.
+    }
+  }
+  return error instanceof Error ? error.message : String(error)
+}
+
 export async function POST(request: Request) {
   let body: SubmitBody
   try {
@@ -50,7 +62,6 @@ export async function POST(request: Request) {
     }, { status: 503 })
   }
 
-  // 1. Fetch the approved request record to build the document from it.
   const requestRecord = await repository.getRequest(id)
   if (!requestRecord) {
     return NextResponse.json({ ok: false, error: 'Request not found', requestId: id }, { status: 404 })
@@ -59,7 +70,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: `Request must be in 'approved' status, got '${requestRecord.status}'`, requestId: id }, { status: 409 })
   }
 
-  // 2. Build the PDF document input from the request record.
   const recipientAddress = [body.recipient.address1, body.recipient.address2, `${body.recipient.city}, ${body.recipient.state} ${body.recipient.postalCode}`]
     .filter(Boolean)
     .join('\n')
@@ -75,10 +85,8 @@ export async function POST(request: Request) {
     requestId: id,
   }
 
-  // 3. Render and attest the PDF (SHA-256).
   const { bytes, sha256 } = await attestRecordsRequestPdf(documentInput)
 
-  // 4. Record the attestation as an audit event.
   await repository.recordFulfillmentEvent({
     requestId: id,
     eventType: 'document_attested',
@@ -86,9 +94,9 @@ export async function POST(request: Request) {
     payload: { sha256, byteLength: bytes.byteLength, filename: 'records-request.pdf' },
   })
 
-  // 5. Build the fulfillment request with only the attested PDF.
   const fulfillmentRequest: FulfillmentRequest = {
     requestId: id,
+    idempotencyKey: `${id}:${sha256}`,
     recipient: body.recipient,
     document: {
       filename: 'records-request.pdf',
@@ -97,7 +105,6 @@ export async function POST(request: Request) {
     mailingClass: body.mailingClass ?? 'certified',
   }
 
-  // 6. Submit to MailMyPDF fulfillment.
   const provider = getMailMyPDFFulfillment()
   if (!provider) {
     return NextResponse.json({
@@ -111,10 +118,17 @@ export async function POST(request: Request) {
   try {
     await repository.transition(id, 'approved', 'queued', actor)
     const result = await provider.submit(fulfillmentRequest)
-    await repository.transition(id, 'queued', 'submitted', actor)
-    await repository.transition(id, 'submitted', 'tracking', actor)
 
-    // 7. Record the fulfillment result with tracking/proof.
+    const afterProvider = await repository.getRequest(id)
+    if (afterProvider?.status === 'queued') {
+      await repository.transition(id, 'queued', 'submitted', actor)
+    }
+
+    const afterSubmit = await repository.getRequest(id)
+    if (afterSubmit?.status === 'submitted') {
+      await repository.transition(id, 'submitted', 'tracking', actor)
+    }
+
     await repository.recordFulfillmentEvent({
       requestId: id,
       eventType: 'fulfillment_submitted',
@@ -125,23 +139,24 @@ export async function POST(request: Request) {
         trackingNumber: result.trackingNumber,
         proofId: result.proofId,
         documentSha256: sha256,
+        idempotencyKey: fulfillmentRequest.idempotencyKey,
       },
     })
 
     const updated = await repository.getRequest(id)
     return NextResponse.json({ ok: true, request: updated, fulfillment: result, documentSha256: sha256 })
   } catch (error) {
-    // Record the failure.
+    const message = await reconcileFailure(repository, id, actor, error)
     await repository.recordFulfillmentEvent({
       requestId: id,
       eventType: 'fulfillment_failed',
       actor,
-      payload: { error: error instanceof Error ? error.message : String(error), documentSha256: sha256 },
+      payload: { error: message, documentSha256: sha256, idempotencyKey: fulfillmentRequest.idempotencyKey },
     })
     return NextResponse.json({
       ok: false,
       error: 'submission_failed',
-      message: error instanceof Error ? error.message : String(error),
+      message,
       requestId: id,
       documentSha256: sha256,
     }, { status: 409 })
