@@ -1,26 +1,34 @@
-export type RecordsGoldStage =
-  | 'discover'
-  | 'draft'
-  | 'validate'
-  | 'send'
-  | 'track'
-  | 'follow-up'
-  | 'receive'
-  | 'organize'
-  | 'analyze'
-  | 'escalate'
-  | 'preserve'
+export const RECORDS_GOLD_STAGES = [
+  'discover',
+  'draft',
+  'validate',
+  'send',
+  'track',
+  'follow-up',
+  'receive',
+  'organize',
+  'analyze',
+  'escalate',
+  'preserve',
+] as const
+
+export type RecordsGoldStage = (typeof RECORDS_GOLD_STAGES)[number]
+export type RecordsGoldStatus = 'completed' | 'blocked' | 'failed'
+
+export type RecordsGoldStageResult = {
+  stage: RecordsGoldStage
+  status: 'passed' | 'blocked' | 'failed'
+  messages: string[]
+}
 
 export type RecordsGoldDependencies = Record<RecordsGoldStage, () => Promise<boolean>>
 
-export async function runRecordsGoldWorkflow(dependencies: RecordsGoldDependencies) {
-  const stages: { stage: RecordsGoldStage; status: 'passed' | 'blocked' | 'failed'; messages: string[] }[] = []
-  const ordered: RecordsGoldStage[] = [
-    'discover', 'draft', 'validate', 'send', 'track', 'follow-up',
-    'receive', 'organize', 'analyze', 'escalate', 'preserve',
-  ]
+export async function runRecordsGoldWorkflow(
+  dependencies: RecordsGoldDependencies,
+) {
+  const stages: RecordsGoldStageResult[] = []
 
-  for (const stage of ordered) {
+  for (const stage of RECORDS_GOLD_STAGES) {
     try {
       const passed = await dependencies[stage]()
       stages.push({
@@ -40,4 +48,22 @@ export async function runRecordsGoldWorkflow(dependencies: RecordsGoldDependenci
   }
 
   return { status: 'completed' as const, stages }
+}
+
+export function isRecordsGoldResult(
+  result: { status: RecordsGoldStatus; stages: readonly RecordsGoldStageResult[] },
+): boolean {
+  return result.status === 'completed'
+    && RECORDS_GOLD_STAGES.every((stage) =>
+      result.stages.some((candidate) => candidate.stage === stage && candidate.status === 'passed'),
+    )
+}
+
+export function hasRecordsPreSendGate(
+  result: { stages: readonly RecordsGoldStageResult[] },
+): boolean {
+  const required = ['discover', 'draft', 'validate'] as const
+  return required.every((stage) =>
+    result.stages.some((candidate) => candidate.stage === stage && candidate.status === 'passed'),
+  )
 }
