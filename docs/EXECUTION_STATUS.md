@@ -8,14 +8,15 @@ Updated: 2026-08-20
 - Deterministic normalization of title, agency, scope, and request items.
 - Domain-level audit payload generation for validated requests.
 - Full Records Gold Standard lifecycle contract with explicit pre-send gating.
-- D1-compatible `RequestStateRepository` with request, item, and immutable audit-event writes.
+- D1-compatible `RequestStateRepository` with request, item, immutable audit-event, and fulfillment-event writes.
 - Atomic lifecycle transitions: `draft → validated → review → approved → queued → submitted → tracking → completed|failed`.
-- Approval API uses the repository when a deployment injects the D1 binding.
+- Provider failures can terminate `queued` requests instead of leaving them stranded.
 - Explicit MailMyPDF fulfillment adapter with authenticated request handling, provider-response validation, and tracking/proof identifiers.
-- Submit API requires durable persistence plus an installed fulfillment adapter and records successful submission/tracking transitions.
-- Cloudflare runtime contract defines the required `RECORDS_DB` D1 binding and fulfillment deployment control.
-- Deployment script now fails closed when placeholder D1 IDs remain.
-- Approved-document integrity attestation produces a stable SHA-256 and fulfillment metadata for approved PDFs.
+- Signed MailMyPDF webhook verification using HMAC-SHA256.
+- MailMyPDF callback endpoint that records fulfillment events and advances `tracking → completed|failed`.
+- Deterministic approved-request PDF renderer with SHA-256 content attestation.
+- Cloudflare/OpenNext runtime contract defining the required `RECORDS_DB` binding and fulfillment controls.
+- Deployment script fails closed when placeholder D1 IDs remain.
 
 ## Still blocked for production certification
 
@@ -25,23 +26,24 @@ The repository and runtime contract exist, but no real provisioned D1 database I
 ### Real MailMyPDF credentials and endpoint
 The fulfillment adapter is implemented and tested against mocked HTTP responses, but no live MailMyPDF credential or endpoint is configured here. No real mailing call has been performed.
 
-### PDF rendering
-The fulfillment boundary now requires an approved PDF and stable content hash, but the application still needs the concrete renderer that produces the final correspondence PDF from approved workflow content.
+### Renderer integration
+A deterministic PDF renderer now produces stable bytes and SHA-256 attestations. The approved request UI/service still needs to call it and persist the resulting document hash before fulfillment.
 
-### Tracking/proof ingestion
-The submit path can record provider tracking/proof identifiers returned by fulfillment, but inbound carrier/provider webhook ingestion and proof-audit reconciliation are not yet wired.
+### Tracking/proof provider integration
+The signed callback endpoint exists and records delivery/failure evidence, but the deployed MailMyPDF provider must be configured with the callback secret and actual callback URL, and its real payload schema must be verified.
 
 ### Integration certification
-The domain/repository/fulfillment tests exist, but there is no verified deployed end-to-end test against a real D1 database plus the real MailMyPDF service. CI/status reporting is also not currently available through the GitHub connector for these commits.
+There is no verified deployed end-to-end test against real D1 + real MailMyPDF. CI/status reporting is also not currently available through the GitHub connector for these commits.
 
-## Required next implementation
+## External-agent operations still required
 
-1. Provision a real D1 database and bind it as `RECORDS_DB` in Cloudflare/OpenNext.
-2. Apply the migration to the test database and run integration tests against D1.
-3. Implement the concrete approved-correspondence PDF renderer and feed its bytes through the integrity attestation.
-4. Configure authenticated MailMyPDF fulfillment in a non-production test environment and execute an authorized test.
-5. Ingest tracking/proof callbacks into `communications`, `audit_events`, and the request state machine.
-6. Run deployed end-to-end certification before calling the vertical Gold Standard.
+1. Provision staging D1 and replace the placeholder IDs in `wrangler.jsonc`.
+2. Apply the SQL migration/schema to staging and run the integration suite against D1.
+3. Configure `MAILMYPDF_API_KEY` and the real fulfillment endpoint in a non-production environment.
+4. Configure `MAILMYPDF_WEBHOOK_SECRET` and register the callback endpoint with MailMyPDF.
+5. Wire the approved-request UI/service to `renderRecordsRequestPdf` + `attestRecordsRequestPdf`, persist the document hash, and send only that attested PDF.
+6. Run one authorized staging transaction and verify `approved → queued → submitted → tracking → completed` plus proof reconciliation.
+7. Promote infrastructure and credentials to production only after staging passes.
 
 ## Certification rule
 
