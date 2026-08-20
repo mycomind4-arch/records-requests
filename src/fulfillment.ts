@@ -1,5 +1,6 @@
 export type FulfillmentRequest = {
   requestId: string
+  idempotencyKey?: string
   recipient: {
     name: string
     address1: string
@@ -36,6 +37,7 @@ export function createMailMyPDFFulfillment(fetcher: typeof fetch, endpoint: stri
         headers: {
           authorization: `Bearer ${apiKey}`,
           'content-type': 'application/json',
+          ...(request.idempotencyKey ? { 'idempotency-key': request.idempotencyKey } : {}),
         },
         body: JSON.stringify(request),
       })
