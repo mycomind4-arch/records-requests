@@ -19,11 +19,15 @@ export function installApprovalAuthorizationResolver(resolver: AuthorizationReso
 export async function getApprovalPrincipal(): Promise<ApprovalPrincipal | null> {
   const resolver = (globalThis as RuntimeGlobal)[runtimeKey]
   if (!resolver) return null
-  const principal = await resolver()
-  if (!principal?.authenticated || !principal.subject.trim()) return null
-  return principal
+  try {
+    const principal = await resolver()
+    if (!principal?.authenticated || !principal.subject.trim()) return null
+    return principal
+  } catch {
+    return null
+  }
 }
 
 export function canApproveWithRole(principal: ApprovalPrincipal): boolean {
-  return principal.authenticated && principal.roles.some((role) => role === 'case_approver' || role === 'admin' || role === 'owner')
+  return principal.authenticated && principal.subject.trim().length > 0 && principal.roles.some((role) => role === 'case_approver' || role === 'admin' || role === 'owner')
 }
