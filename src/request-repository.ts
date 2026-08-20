@@ -17,9 +17,10 @@ export type RequestRecord = {
 export type RequestStateRepository = RequestRepository & {
   getRequest(id: string): Promise<RequestRecord | null>
   transition(id: string, from: RequestState, to: RequestState, actor: string): Promise<RequestRecord>
+  recordFulfillmentEvent(input: { requestId: string; eventType: string; actor: string; payload: Record<string, unknown> }): Promise<void>
 }
 
-export type D1Result<T = unknown> = { results?: T[]; success?: boolean }
+export type D1Result<T = unknown> = { results?: T[]; success?: boolean; meta?: { changes?: number } }
 
 export type D1Statement = {
   bind(...values: unknown[]): D1Statement
@@ -37,8 +38,8 @@ const allowedTransitions: Record<RequestState, readonly RequestState[]> = {
   validated: ['review'],
   review: ['approved'],
   approved: ['queued'],
-  queued: ['submitted'],
-  submitted: ['tracking'],
+  queued: ['submitted', 'failed'],
+  submitted: ['tracking', 'failed'],
   tracking: ['completed', 'failed'],
   completed: [],
   failed: [],
@@ -127,7 +128,7 @@ export function createD1RequestRepository(db: D1DatabaseLike): RequestStateRepos
         `UPDATE requests SET status = ?, updated_at = ? WHERE id = ? AND status = ?`,
       ).bind(to, now, id, from).run()
 
-      if (!result.success && !(result as { meta?: { changes?: number } }).meta?.changes) {
+      if (!result.success && !(result.meta?.changes)) {
         throw new Error('Request transition was not persisted; request may not exist or status changed concurrently')
       }
 
@@ -146,5 +147,22 @@ export function createD1RequestRepository(db: D1DatabaseLike): RequestStateRepos
       if (!record) throw new Error('Request disappeared after transition')
       return record
     },
+
+    async recordFulfillmentEvent({ requestId, eventType, actor, payload }) {
+      const now = new Date().toISOString()
+      await db.prepare(
+        `INSERT INTO audit_events (id, request_id, event_type, actor_type, actor_id, payload_json, event_hash)
+         VALUES (?, ?, ?, 'system', ?, ?, ?)`
+      ).bind(
+        crypto.randomUUID(),
+        requestId,
+        eventType,
+        actor,
+        JSON.stringify(payload),
+        `${requestId}:${eventType}:${now}`,
+      ).run()
+    },
   }
 }
+
+export type _UnusedCreateRequestInput = CreateRequestInput
