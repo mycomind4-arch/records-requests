@@ -3,12 +3,12 @@ import { getRequestStateRepository } from '../../../../src/runtime'
 import { getMailMyPDFFulfillment } from '../../../../src/fulfillment-runtime'
 import { attestRecordsRequestPdf, type RecordsDocumentInput } from '../../../../src/records-document'
 import type { FulfillmentRequest } from '../../../../src/fulfillment'
+import { canApproveWithRole, getApprovalPrincipal } from '../../../../src/authorization-runtime'
 
 export const runtime = 'edge'
 
 type SubmitBody = {
   id?: string
-  actor?: string
   sender?: { name?: string; address?: string }
   recipient: {
     name: string
@@ -44,10 +44,8 @@ export async function POST(request: Request) {
   }
 
   const id = body.id?.trim() ?? ''
-  const actor = body.actor?.trim() ?? ''
 
   if (!id) return NextResponse.json({ ok: false, error: 'Request id is required' }, { status: 422 })
-  if (!actor) return NextResponse.json({ ok: false, error: 'Submitting actor is required' }, { status: 422 })
   if (!body.recipient?.name || !body.recipient?.address1 || !body.recipient?.city || !body.recipient?.state || !body.recipient?.postalCode) {
     return NextResponse.json({ ok: false, error: 'Complete recipient (name, address1, city, state, postalCode) is required' }, { status: 422 })
   }
@@ -62,6 +60,25 @@ export async function POST(request: Request) {
     }, { status: 503 })
   }
 
+  const principal = await getApprovalPrincipal()
+  if (!principal) {
+    return NextResponse.json({
+      ok: false,
+      error: 'approval_auth_not_configured',
+      message: 'No authenticated submission principal is installed. Submission remains blocked.',
+      requestId: id,
+    }, { status: 503 })
+  }
+  if (!canApproveWithRole(principal)) {
+    return NextResponse.json({
+      ok: false,
+      error: 'submission_forbidden',
+      message: 'The authenticated principal does not have a submission role.',
+      requestId: id,
+    }, { status: 403 })
+  }
+
+  const actor = principal.subject
   const requestRecord = await repository.getRequest(id)
   if (!requestRecord) {
     return NextResponse.json({ ok: false, error: 'Request not found', requestId: id }, { status: 404 })
@@ -144,7 +161,7 @@ export async function POST(request: Request) {
     })
 
     const updated = await repository.getRequest(id)
-    return NextResponse.json({ ok: true, request: updated, fulfillment: result, documentSha256: sha256 })
+    return NextResponse.json({ ok: true, request: updated, fulfillment: result, documentSha256: sha256, submittedBy: principal.subject })
   } catch (error) {
     const message = await reconcileFailure(repository, id, actor, error)
     await repository.recordFulfillmentEvent({
