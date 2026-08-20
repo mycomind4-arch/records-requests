@@ -2,6 +2,8 @@ export const RECORDS_GOLD_STAGES = [
   'discover',
   'draft',
   'validate',
+  'review',
+  'approval',
   'send',
   'track',
   'follow-up',
@@ -15,13 +17,22 @@ export const RECORDS_GOLD_STAGES = [
 export type RecordsGoldStage = (typeof RECORDS_GOLD_STAGES)[number]
 export type RecordsGoldStatus = 'completed' | 'blocked' | 'failed'
 
+export type RecordsGoldEvidence = {
+  sourceIds: string[]
+  notes?: string[]
+}
+
 export type RecordsGoldStageResult = {
   stage: RecordsGoldStage
   status: 'passed' | 'blocked' | 'failed'
+  evidence: RecordsGoldEvidence
   messages: string[]
 }
 
-export type RecordsGoldDependencies = Record<RecordsGoldStage, () => Promise<boolean>>
+export type RecordsGoldDependencies = Record<
+  RecordsGoldStage,
+  () => Promise<RecordsGoldEvidence>
+>
 
 export async function runRecordsGoldWorkflow(
   dependencies: RecordsGoldDependencies,
@@ -30,17 +41,29 @@ export async function runRecordsGoldWorkflow(
 
   for (const stage of RECORDS_GOLD_STAGES) {
     try {
-      const passed = await dependencies[stage]()
+      const evidence = await dependencies[stage]()
+      const validEvidence = Array.isArray(evidence.sourceIds) && evidence.sourceIds.length > 0
+      if (!validEvidence) {
+        stages.push({
+          stage,
+          status: 'blocked',
+          evidence: { sourceIds: [] },
+          messages: [`${stage} gate requires at least one evidence/source reference`],
+        })
+        return { status: 'blocked' as const, stages }
+      }
+
       stages.push({
         stage,
-        status: passed ? 'passed' : 'blocked',
-        messages: passed ? [] : [`${stage} gate did not pass`],
+        status: 'passed',
+        evidence,
+        messages: evidence.notes ?? [],
       })
-      if (!passed) return { status: 'blocked' as const, stages }
     } catch (error) {
       stages.push({
         stage,
         status: 'failed',
+        evidence: { sourceIds: [] },
         messages: [error instanceof Error ? error.message : String(error)],
       })
       return { status: 'failed' as const, stages }
@@ -62,7 +85,7 @@ export function isRecordsGoldResult(
 export function hasRecordsPreSendGate(
   result: { stages: readonly RecordsGoldStageResult[] },
 ): boolean {
-  const required = ['discover', 'draft', 'validate'] as const
+  const required = ['discover', 'draft', 'validate', 'review', 'approval'] as const
   return required.every((stage) =>
     result.stages.some((candidate) => candidate.stage === stage && candidate.status === 'passed'),
   )
