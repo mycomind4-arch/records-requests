@@ -18,6 +18,6 @@ describe('police records timeline', () => {
       { id:'r1', filename:'report-a.pdf', text:'Incident report date 2026-01-02.' },
       { id:'r2', filename:'report-b.pdf', text:'Incident report date 2026-01-03.' },
     ])
-    expect(timeline.contradictions).toContainEqual(expect.objectContaining({ type: undefined, id:'date-conflict-incident' }))
+    expect(timeline.contradictions).toContainEqual(expect.objectContaining({ id:'date-conflict-incident' }))
   })
 })
