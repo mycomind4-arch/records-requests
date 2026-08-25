@@ -149,7 +149,7 @@ export const workflows: Workflow[] = [
     bestFor: ['Government emails', 'Email attachments', 'Text and messaging records', 'Communications with contractors and developers', 'Calendar and meeting communications'],
     cta: 'Build a Government Communications Request',
     seo: seo(
-      'Government Emails & Communications Records Request — Custodians, Keywords & Dates',
+      'Government Email & Communications Records Request',
       'Build a targeted government communications records request for emails, attachments, texts, messaging, calendars, and communications using custodians, keywords, projects, outside parties, and date ranges.',
       ['government email records request', 'government emails public records request', 'public records email request', 'request government emails', 'government communications records request', 'agency email records', 'government text messages public records', 'government text message records request', 'public records request emails and attachments', 'government communications request template', 'government emails by custodian', 'government emails by date range', 'government emails by keyword', 'public records email search terms', 'agency communications records'],
       [
