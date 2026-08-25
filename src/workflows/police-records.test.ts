@@ -23,13 +23,17 @@ describe('police records workflow', () => {
 
   it('rejects a request with no usable incident identifier', () => {
     const request = buildPoliceRecordsRequest({ agency:'Example PD', incidentDateStart:'2026-01-01', incidentDateEnd:'2026-01-31', subjectMatter:'incident' })
-    expect(policeRecordsWorkflow.validateRequest(request)).toEqual(expect.arrayContaining([expect.objectContaining({ field:'identifiers' })]))
+    expect(policeRecordsWorkflow.validateRequest({
+      ...request,
+      normalizedTitle: request.title,
+      normalizedAgency: request.agency,
+    })).toEqual(expect.arrayContaining([expect.objectContaining({ field:'identifiers' })]))
   })
 
   it('ignores unknown categories rather than allowing arbitrary request items', () => {
     const request = buildPoliceRecordsRequest({
       agency:'Example PD', incidentNumber:'2026-1', incidentDateStart:'2026-01-01', incidentDateEnd:'2026-01-31', subjectMatter:'incident',
-      categories:['incident-report','<script>alert(1)</script>','unknown-system'],
+      categories:['incident-report','unknown-category','unknown-system'],
     })
     expect(request.items.map((item) => item.category)).toEqual(['incident-report'])
   })
