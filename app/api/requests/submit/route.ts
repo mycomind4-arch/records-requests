@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
-import { getRequestStateRepositoryAsync } from '../../../../src/runtime'
+import { getD1RequestDatabase, getRequestStateRepositoryAsync } from '../../../../src/runtime'
 import { getMailMyPDFFulfillment } from '../../../../src/fulfillment-runtime'
 import { attestRecordsRequestPdf, type RecordsDocumentInput } from '../../../../src/records-document'
 import type { FulfillmentRequest } from '../../../../src/fulfillment'
 import { canApproveWithRole, getApprovalPrincipal } from '../../../../src/authorization-runtime'
+import { markFulfillmentAccepted, markFulfillmentFailed, reserveFulfillmentAttempt } from '../../../../src/fulfillment/reservation'
 
 export const runtime = 'edge'
 export const dynamic = 'force-dynamic'
@@ -76,9 +77,27 @@ export async function POST(request: Request) {
   const provider = getMailMyPDFFulfillment()
   if (!provider) return NextResponse.json({ ok: false, error: 'fulfillment_not_configured', requestId: id }, { status: 503 })
 
+  const db = getD1RequestDatabase()
+  if (!db) return NextResponse.json({ ok: false, error: 'persistence_not_configured', requestId: id }, { status: 503 })
+
+  const reservation = await reserveFulfillmentAttempt(db, id, fulfillmentRequest.idempotencyKey)
+  if (reservation.kind === 'already_accepted') {
+    return NextResponse.json({ ok: true, requestId: id, status: 'already_submitted', fulfillmentAttemptId: reservation.reservation.id }, { status: 200 })
+  }
+  if (reservation.kind === 'already_pending') {
+    return NextResponse.json({ ok: false, error: 'submission_in_progress', requestId: id, fulfillmentAttemptId: reservation.reservation.id }, { status: 409 })
+  }
+  if (reservation.kind === 'already_failed') {
+    return NextResponse.json({ ok: false, error: 'previous_submission_failed', requestId: id, fulfillmentAttemptId: reservation.reservation.id }, { status: 409 })
+  }
+
+  const fulfillmentAttemptId = reservation.reservation.id
+
   try {
     await repository.transition(id, 'approved', 'queued', actor)
     const result = await provider.submit(fulfillmentRequest)
+    await markFulfillmentAccepted(db, fulfillmentAttemptId, result.submissionId)
+
     const afterProvider = await repository.getRequest(id)
     if (afterProvider?.status === 'queued') await repository.transition(id, 'queued', 'submitted', actor)
     const afterSubmit = await repository.getRequest(id)
@@ -88,13 +107,16 @@ export async function POST(request: Request) {
       requestId: id,
       eventType: 'fulfillment_submitted',
       actor,
-      payload: { provider: result.provider, submissionId: result.submissionId, trackingNumber: result.trackingNumber, proofId: result.proofId, documentSha256: sha256, idempotencyKey: fulfillmentRequest.idempotencyKey },
+      payload: { provider: result.provider, submissionId: result.submissionId, trackingNumber: result.trackingNumber, proofId: result.proofId, documentSha256: sha256, idempotencyKey: fulfillmentRequest.idempotencyKey, fulfillmentAttemptId },
     })
 
-    return NextResponse.json({ ok: true, request: await repository.getRequest(id), fulfillment: result, documentSha256: sha256, submittedBy: principal.subject })
+    return NextResponse.json({ ok: true, request: await repository.getRequest(id), fulfillment: result, documentSha256: sha256, fulfillmentAttemptId, submittedBy: principal.subject })
   } catch (error) {
     const message = await reconcileFailure(repository, id, actor, error)
-    await repository.recordFulfillmentEvent({ requestId: id, eventType: 'fulfillment_failed', actor, payload: { error: message, documentSha256: sha256, idempotencyKey: fulfillmentRequest.idempotencyKey } })
-    return NextResponse.json({ ok: false, error: 'submission_failed', message, requestId: id, documentSha256: sha256 }, { status: 409 })
+    try { await markFulfillmentFailed(db, fulfillmentAttemptId, message) } catch { /* Preserve original submission error. */ }
+    try {
+      await repository.recordFulfillmentEvent({ requestId: id, eventType: 'fulfillment_failed', actor, payload: { error: message, documentSha256: sha256, idempotencyKey: fulfillmentRequest.idempotencyKey, fulfillmentAttemptId } })
+    } catch { /* Preserve original submission error. */ }
+    return NextResponse.json({ ok: false, error: 'submission_failed', message, requestId: id, documentSha256: sha256, fulfillmentAttemptId }, { status: 409 })
   }
 }
