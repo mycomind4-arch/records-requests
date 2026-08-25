@@ -42,6 +42,16 @@ describe('police production analysis', () => {
     ]))
   })
 
+  it('does not count a generic response that merely references CAD as produced CAD', () => {
+    const result = analyzePoliceProduction(
+      [{ id:'dispatch-cad', label:'Dispatch / CAD', keywords:['CAD','dispatch'] }],
+      [{ id:'r1', filename:'response.pdf', text:'See attached CAD record.' }],
+    )
+    expect(result.coveredCategoryIds).not.toContain('dispatch-cad')
+    expect(result.missingCategoryIds).toContain('dispatch-cad')
+    expect(result.findings).toContainEqual(expect.objectContaining({ type:'REFERENCED_RECORD_NOT_PRODUCED' }))
+  })
+
   it('does not treat absent media as proof that media does not exist', () => {
     const result = analyzePoliceProduction(
       [{ id:'body-camera', label:'Body Camera', keywords:['body-camera'] }],
