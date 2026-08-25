@@ -2,6 +2,7 @@ import type { ValidatedRequest } from '../request-service'
 import { createRecordsWorkflow, type RecordsWorkflow } from '../workflow-factory'
 import type { RecordsDomainCapability } from './domain-pack'
 import { analyzeCodeEnforcementProduction, type ProductionRecord, type RequestedCategory } from './code-enforcement-analysis'
+import { runCodeEnforcementStrategy } from './code-enforcement-ai'
 
 export const CODE_ENFORCEMENT_RECORD_CATEGORIES = [
   'case-file','violations','complaints','inspections','notices-and-orders','photographs-and-video','correspondence','enforcement-actions','abatement-and-compliance','permits-and-related-records',
@@ -40,7 +41,7 @@ function descriptionForCategory(category:string,input:Record<string,unknown>):st
   return `${descriptions[category]??`Records concerning ${category}.${scope}${dates}`}${subjectText}`
 }
 function validateCodeEnforcement(request:ValidatedRequest):readonly {field:string;message:string}[]{ const issues:{field:string;message:string}[]=[]; const scope=request.items; const hasProperty=scope.some(i=>i.description.toLowerCase().includes('property address')); const hasCase=scope.some(i=>i.description.toLowerCase().includes('case number')); const hasSubject=scope.some(i=>i.description.toLowerCase().includes('matter concerns')); if(!hasProperty&&!hasCase) issues.push({field:'identifiers',message:'Provide a property address or case number so the agency can identify the enforcement matter.'}); if(!hasSubject) issues.push({field:'subjectMatter',message:'Describe the code issue or enforcement matter so the request is intelligible and searchable.'}); if(!scope.some(i=>i.category==='case-file')) issues.push({field:'categories',message:'The flagship workflow should include the case-file category unless the user deliberately narrows the request.'}); return issues }
-export function buildCodeEnforcementRequest(input:Record<string,unknown>){ const agency=value(input,'agency')??''; const property=value(input,'propertyAddress'); const parcel=value(input,'parcelNumber'); const caseNumber=value(input,'caseNumber'); const violation=value(input,'violationNumber'); const subject=value(input,'subjectMatter'); const start=value(input,'dateStart'); const end=value(input,'dateEnd'); const categories=buildCategories(input); return { title:`Code Enforcement Records — ${property??caseNumber??subject??'Matter'}`, agency, jurisdiction:value(input,'jurisdiction'), purpose:value(input,'purpose')??'Research and document the code-enforcement history and agency records for the identified matter.', scope:JSON.stringify({workflow:'code-enforcement-records',propertyAddress:property,parcelNumber:parcel,caseNumber,violationNumber:violation,relatedParty:value(input,'relatedParty'),department:value(input,'department'),dateStart:start,dateEnd:end,subjectMatter:subject}), items:categories.map(category=>({category,description:descriptionForCategory(category,input),dateStart:start,dateEnd:end,custodian:value(input,'department'),systemHint:category==='photographs-and-video'?'code-enforcement field media / inspection systems':undefined,format:category==='photographs-and-video'?'native digital files where available':undefined})) } }
+export function buildCodeEnforcementRequest(input:Record<string,unknown>){ const agency=value(input,'agency')??''; const property=value(input,'propertyAddress'); const parcel=value(input,'parcelNumber'); const caseNumber=value(input,'caseNumber'); const violation=value(input,'violationNumber'); const subject=value(input,'subjectMatter'); const start=value(input,'dateStart'); const end=value(input,'dateEnd'); const categories=buildCategories(input); return { title:`Code Enforcement Records — ${property??caseNumber??subject??'Matter'}`, agency, jurisdiction:value(input,'jurisdiction'), purpose:value(input,'purpose')??'Research and document the code-enforcement history and agency records for the identified matter.', scope:JSON.stringify({workflow:'code-enforcement-records',propertyAddress:property,parcelNumber:parcel,caseNumber,violationNumber,relatedParty:value(input,'relatedParty'),department:value(input,'department'),dateStart:start,dateEnd:end,subjectMatter:subject}), items:categories.map(category=>({category,description:descriptionForCategory(category,input),dateStart:start,dateEnd:end,custodian:value(input,'department'),systemHint:category==='photographs-and-video'?'code-enforcement field media / inspection systems':undefined,format:category==='photographs-and-video'?'native digital files where available':undefined})) } }
 
 const ANALYSIS_FINDING_TYPES = ['MISSING_REQUESTED_CATEGORY','PARTIAL_PRODUCTION','DATE_GAP','DUPLICATE_RECORD','MISSING_ATTACHMENT','INCONSISTENT_CASE_IDENTIFIER','INCONSISTENT_PROPERTY_IDENTIFIER','UNEXPLAINED_WITHHOLDING','REDACTION_REVIEW','UNRESPONSIVE_ITEM'] as const
 
@@ -54,6 +55,12 @@ export const codeEnforcementRecordsWorkflow: RecordsWorkflow = createRecordsWork
     if(!input||typeof input!=='object') throw new Error('PRODUCTION_ANALYSIS_INPUT_INVALID')
     const source=input as { requestedItems?: readonly {category:string;description:string}[]; records?: readonly ProductionRecord[] }
     const records=source.records??[]; const requested=normalizeRequestedCategories(source.requestedItems??[])
-    return analyzeCodeEnforcementProduction(requested,records)
+    const deterministic=analyzeCodeEnforcementProduction(requested,records)
+    const ai=await runCodeEnforcementStrategy({
+      requestedItems: source.requestedItems ?? [],
+      productionSummary: { recordsReviewed: deterministic.recordsReviewed, findings: deterministic.findings, coveredCategoryIds: deterministic.coveredCategoryIds, missingCategoryIds: deterministic.missingCategoryIds },
+      records: records.map(record=>({ id:record.id, filename:record.filename, category:record.category, text:record.text ?? '' })),
+    })
+    return { ...deterministic, aiStrategy: ai.value, aiProvenance: { selected: ai.value ? undefined : undefined, providers: ai.providers, agreement: ai.confidence, disagreements: ai.disagreements, warnings: ai.warnings } }
   }},
 })
