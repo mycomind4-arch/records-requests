@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assessContradiction, classifyProductionRecord, extractCodeEnforcementFacts } from './code-enforcement-ai'
+import { assessContradiction, buildCodeEnforcementRequestStrategy, classifyProductionRecord, extractCodeEnforcementFacts } from './code-enforcement-ai'
 import type { LlmProvider } from '../ai/multi-llm-orchestrator'
 
 const policy = { minimumProviders: 2, agreementThreshold: 0.66, maxProviders: 3 }
@@ -42,5 +42,26 @@ describe('code enforcement multi-LLM tasks', () => {
       { id: 'b', filename: 'b.pdf', text: 'Inspection Jan 3' }, policy,
     )
     expect(result.value.contradictory).toBe(true)
+  })
+
+  it('builds a schema-validated request strategy', async () => {
+    const result = await buildCodeEnforcementRequestStrategy(
+      [
+        provider('a', { likelyCustodians: ['Code Enforcement'], searchTerms: ['case file'], scopeGaps: [], overbreadthRisks: ['date range'], identifiersToConfirm: ['case number'], followUpPriorities: ['inspection records'] }),
+        provider('b', { likelyCustodians: ['Code Enforcement'], searchTerms: ['case file'], scopeGaps: [], overbreadthRisks: ['date range'], identifiersToConfirm: ['case number'], followUpPriorities: ['inspection records'] }),
+      ],
+      { agency: 'Example City', workflow: 'code-enforcement-records' },
+      policy,
+    )
+    expect(result.value.likelyCustodians).toEqual(['Code Enforcement'])
+    expect(result.providers).toEqual(['a', 'b'])
+  })
+
+  it('rejects malformed strategy output', async () => {
+    await expect(buildCodeEnforcementRequestStrategy(
+      [provider('a', {}), provider('b', {})],
+      { agency: 'Example City', workflow: 'code-enforcement-records' },
+      policy,
+    )).rejects.toThrow('CODE_ENFORCEMENT_AI_SCHEMA_INVALID')
   })
 })
