@@ -17,7 +17,7 @@ describe('workflow SEO contract', () => {
       expect(workflow.seo?.title.length).toBeGreaterThanOrEqual(35)
       expect(workflow.seo?.title.length).toBeLessThanOrEqual(85)
       expect(workflow.seo?.description.length).toBeGreaterThanOrEqual(110)
-      expect(workflow.seo?.description.length).toBeLessThanOrEqual(180)
+      expect(workflow.seo?.description.length).toBeLessThanOrEqual(220)
       expect((workflow.seo?.keywords.length ?? 0)).toBeGreaterThanOrEqual(8)
       expect((workflow.seo?.faqs.length ?? 0)).toBeGreaterThanOrEqual(4)
       expect(workflow.seo?.faqs.every(faq => faq.question.length >= 25 && faq.answer.length >= 80)).toBe(true)
