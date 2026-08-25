@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -11,6 +12,7 @@ const PLACEHOLDER_IMAGE = 'https://media.base44.com/images/public/6a8bd310dfdf9a
 const FEATURED_SLUGS = ['public-records-request', 'code-enforcement-records', 'property-records', 'police-records', 'permit-inspection-records', 'planning-records']
 
 export default function WorkflowDirectory({ workflows, groups }: { workflows: Workflow[]; groups: Group[] }) {
+  const pathname = usePathname()
   const [query, setQuery] = useState('')
   const [featuredIndex, setFeaturedIndex] = useState(0)
   const filtered = useMemo(() => {
@@ -20,26 +22,28 @@ export default function WorkflowDirectory({ workflows, groups }: { workflows: Wo
   }, [query, workflows])
   const allowed = new Set(filtered.map((w) => w.slug))
   const featured = FEATURED_SLUGS.map((slug) => workflows.find((workflow) => workflow.slug === slug)).filter((workflow): workflow is Workflow => Boolean(workflow))
-  const featuredVisible = featured.map((_, offset) => featured[(featuredIndex + offset) % featured.length]).slice(0, 3)
+  const featuredVisible = featured.length ? featured.map((_, offset) => featured[(featuredIndex + offset) % featured.length]).slice(0, 3) : []
 
-  if (typeof window !== 'undefined' && window.location.pathname === '/') {
+  if (pathname === '/') {
     return <div className="featuredCarousel" aria-label="Featured records workflows">
       <div className="sectionHeadingRow featuredCarouselHeading">
         <div><h3>Start with a common records job.</h3><p>Featured starting points for some of the most common records requests.</p></div>
         <Link className="textLink" href="/workflows">View all workflows →</Link>
       </div>
-      <div className="featuredCarouselViewport">
-        {featuredVisible.map((workflow) => <Link key={workflow.slug} href={`/workflows/${workflow.slug}`} className="featuredWorkflowCard">
-          <div className="featuredWorkflowCard__media"><img src={PLACEHOLDER_IMAGE} alt="" aria-hidden="true" /><span>{workflow.category}</span></div>
-          <div className="featuredWorkflowCard__body"><h3>{workflow.title}</h3><p>{workflow.description}</p><span className="featuredWorkflowCard__link">Explore workflow <ArrowRight size={14} /></span></div>
-        </Link>)}
-      </div>
-      {featured.length > 1 && <div className="featuredCarouselControls"><div className="featuredCarouselDots">
-        {featured.map((workflow, index) => <button key={workflow.slug} type="button" aria-label={`Show featured workflow ${index + 1}`} aria-current={index === featuredIndex} onClick={() => setFeaturedIndex(index)} />)}
-      </div><div className="featuredCarouselArrows">
-        <button type="button" onClick={() => setFeaturedIndex((current) => (current - 1 + featured.length) % featured.length)} aria-label="Previous featured workflows"><ChevronLeft size={18} /></button>
-        <button type="button" onClick={() => setFeaturedIndex((current) => (current + 1) % featured.length)} aria-label="Next featured workflows"><ChevronRight size={18} /></button>
-      </div></div>}
+      {featuredVisible.length > 0 && <>
+        <div className="featuredCarouselViewport">
+          {featuredVisible.map((workflow) => <Link key={workflow.slug} href={`/workflows/${workflow.slug}`} className="featuredWorkflowCard">
+            <div className="featuredWorkflowCard__media"><img src={PLACEHOLDER_IMAGE} alt="" aria-hidden="true" /><span>{workflow.category}</span></div>
+            <div className="featuredWorkflowCard__body"><h3>{workflow.title}</h3><p>{workflow.description}</p><span className="featuredWorkflowCard__link">Explore workflow <ArrowRight size={14} /></span></div>
+          </Link>)}
+        </div>
+        {featured.length > 1 && <div className="featuredCarouselControls"><div className="featuredCarouselDots">
+          {featured.map((workflow, index) => <button key={workflow.slug} type="button" aria-label={`Show featured workflow ${index + 1}`} aria-current={index === featuredIndex} onClick={() => setFeaturedIndex(index)} />)}
+        </div><div className="featuredCarouselArrows">
+          <button type="button" onClick={() => setFeaturedIndex((current) => (current - 1 + featured.length) % featured.length)} aria-label="Previous featured workflows"><ChevronLeft size={18} /></button>
+          <button type="button" onClick={() => setFeaturedIndex((current) => (current + 1) % featured.length)} aria-label="Next featured workflows"><ChevronRight size={18} /></button>
+        </div></div>}
+      </>}
     </div>
   }
 
