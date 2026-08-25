@@ -11,19 +11,25 @@ The foundation pass is intentionally separate from workflow implementation.
 - Per-request audit-tail compare-and-swap for concurrent lifecycle writers
 - Transactional request creation with initial audit event
 - Fulfillment webhook deduplication
+- Durable outbound fulfillment reservation before provider submission
+- Deterministic fulfillment idempotency boundary
 - Document attestation path
 - Workflow factory contract and tests
 - Records domain-pack capability contract aligned to MailMyPDF Platform
 - Versioned jurisdiction policy contract (fail-closed)
-- Durable fulfillment-attempt schema and deterministic idempotency contract
 - Production → evidence → finding → action domain boundary
 - CI coverage for typecheck/test/build
 - Explicit MailMyPDF Platform consumption boundary
 
-## Current focus
+## External / deployment blockers
 
-- Integrate durable fulfillment attempts into the submission transaction
-- Finish repository-level ownership enforcement on every mutation path
-- Connect the workflow factory/domain pack to actual workflow routes
-- Make MailMyPDF Platform packages directly consumable by vertical repositories
-- Certify the foundation before starting the Code Enforcement flagship workflow
+- Install the real identity resolver.
+- Provision and apply real D1 resources.
+- Verify deployed Cloudflare E2E execution.
+- Consume published MailMyPDF Platform packages once platform issue #30 is completed.
+
+## Workflow-ready boundary
+
+The Records Requests vertical is ready for domain workflow implementation without introducing another workflow engine or duplicating the platform's generic intelligence, proof, fulfillment, or lifecycle contracts.
+
+The first flagship workflow is `code-enforcement-records`.
