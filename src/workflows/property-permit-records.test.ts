@@ -22,7 +22,8 @@ describe('property and permit records workflow', () => {
 
   it('rejects a request with no usable property or permit identifier', () => {
     const request = buildPropertyPermitRecordsRequest({ agency:'Example', dateStart:'2026-01-01', dateEnd:'2026-01-31', projectDescription:'addition' })
-    expect(propertyPermitRecordsWorkflow.validateRequest(request)).toEqual(expect.arrayContaining([
+    const validatedRequest = { ...request, normalizedTitle: request.title.replace(/\s+/g, ' '), normalizedAgency: request.agency.replace(/\s+/g, ' ') }
+    expect(propertyPermitRecordsWorkflow.validateRequest(validatedRequest)).toEqual(expect.arrayContaining([
       expect.objectContaining({ field:'identifiers' }),
     ]))
   })
