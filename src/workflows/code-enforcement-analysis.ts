@@ -18,7 +18,7 @@ export type ExtractedProductionIdentifiers = {
   parcelNumbers: string[]
   addresses: string[]
   dates: string[]
-  people: string[]
+  references: string[]
 }
 
 export type IdentifierReconciliation = {
@@ -59,6 +59,7 @@ export type CodeEnforcementProductionAnalysis = {
 }
 
 const REFERENCE_PATTERNS = /(?:see|attached|enclosed|attachment|report|photo|photograph|exhibit|notice|citation|inspection)\b/i
+const REFERENCE_TARGET_PATTERN = /(?:see|attached|enclosed|attachment|exhibit|photographs?|photos?|videos?|inspection report|notice|citation|complaint|order)\s*(?:no\.?|#|number)?\s*[:#-]?\s*([A-Z0-9][A-Z0-9._/-]{1,})?/gi
 const REDACTION_PATTERNS = /(?:redacted|withheld|exempt|privileged|confidential|blackout)/i
 const CASE_PATTERNS = /\b(?:case|complaint|file|enforcement)[\s#:-]*(?:no\.?|number)?[\s#:-]*([A-Z]{0,6}[- ]?\d{2,}(?:[-/][A-Z0-9]+)*)\b/gi
 const PARCEL_PATTERNS = /\b(?:APN|parcel(?: number| no\.?| #)?)[:\s#-]*([A-Z0-9][A-Z0-9 -]{3,})\b/gi
@@ -66,7 +67,7 @@ const ADDRESS_PATTERN = /\b\d{1,6}\s+[A-Za-z0-9.'-]+(?:\s+[A-Za-z0-9.'-]+){0,5}\
 const DATE_PATTERN = /\b(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2},?\s+\d{4})\b/gi
 
 function unique(values: string[]): string[] { return [...new Set(values.map((v) => v.trim()).filter(Boolean))] }
-function matches(text: string, pattern: RegExp): string[] { return [...text.matchAll(pattern)].map((m) => (m[1] ?? m[0]).replace(/\s+/g, ' ').trim()) }
+function matches(text: string, pattern: RegExp): string[] { pattern.lastIndex = 0; return [...text.matchAll(pattern)].map((m) => (m[1] ?? m[0]).replace(/\s+/g, ' ').trim()) }
 
 export function extractProductionIdentifiers(record: ProductionRecord): ExtractedProductionIdentifiers {
   const text = `${record.filename} ${record.text ?? ''}`
@@ -76,7 +77,7 @@ export function extractProductionIdentifiers(record: ProductionRecord): Extracte
     parcelNumbers: unique(matches(text, PARCEL_PATTERNS)),
     addresses: unique(matches(text, ADDRESS_PATTERN)),
     dates: unique(matches(text, DATE_PATTERN)),
-    people: [],
+    references: unique(matches(text, REFERENCE_TARGET_PATTERN)),
   }
 }
 
@@ -96,6 +97,11 @@ export function reconcileProductionIdentifiers(extracted: readonly ExtractedProd
   }
 }
 
+function categoryForReference(reference: string, requested: readonly RequestedCategory[]): RequestedCategory | undefined {
+  const value = reference.toLowerCase()
+  return requested.find((category) => category.keywords.some((keyword) => value.includes(keyword.toLowerCase())))
+}
+
 export function analyzeCodeEnforcementProduction(
   requested: readonly RequestedCategory[],
   records: readonly ProductionRecord[],
@@ -106,16 +112,37 @@ export function analyzeCodeEnforcementProduction(
   const identifierReconciliation = reconcileProductionIdentifiers(extractedIdentifiers)
 
   for (const category of requested) {
-    const matches = records.filter((record) => {
+    const matchesForCategory = records.filter((record) => {
       const haystack = `${record.filename} ${record.category ?? ''} ${record.text ?? ''}`.toLowerCase()
       return category.keywords.some((keyword) => haystack.includes(keyword.toLowerCase()))
     })
-    if (matches.length > 0) coveredCategoryIds.push(category.id)
+    if (matchesForCategory.length > 0) coveredCategoryIds.push(category.id)
     else findings.push({ id: `missing-${category.id}`, type: 'MISSING_REQUESTED_CATEGORY', severity: 'warning', description: `No produced record was matched to requested category: ${category.label}.`, recordIds: [], requestedCategoryId: category.id })
   }
 
   for (const conflict of identifierReconciliation.conflicts) {
     findings.push({ id: `identifier-${conflict.field}`, type: 'IDENTIFIER_MISMATCH', severity: 'critical', description: `Produced records contain multiple ${conflict.field} values: ${conflict.values.join(', ')}. Confirm which identifier controls the matter before treating the production as complete.`, recordIds: conflict.recordIds })
+  }
+
+  const coveredText = records.map((record) => `${record.filename} ${record.category ?? ''}`).join(' ').toLowerCase()
+  extractedIdentifiers.forEach((item) => {
+    const source = records.find((record) => record.id === item.recordId)
+    if (!source || !REFERENCE_PATTERNS.test(source.text ?? '')) return
+    for (const reference of item.references) {
+      const targetCategory = categoryForReference(reference, requested)
+      if (targetCategory && !coveredText.includes(targetCategory.id.toLowerCase()) && !targetCategory.keywords.some((keyword) => coveredText.includes(keyword.toLowerCase()))) {
+        findings.push({ id: `referenced-missing-${item.recordId}-${targetCategory.id}`, type: 'REFERENCED_RECORD_NOT_PRODUCED', severity: 'critical', description: `Record ${source.filename} appears to reference ${targetCategory.label}, but no produced record was matched to that record type.`, recordIds: [item.recordId], requestedCategoryId: targetCategory.id })
+      }
+    }
+    if (/(?:attached|enclosed|attachment|exhibit|photograph|photo|video)\b/i.test(source.text ?? '')) {
+      findings.push({ id: `attachment-${item.recordId}`, type: 'MISSING_ATTACHMENT', severity: 'warning', description: `Record ${source.filename} references an attachment, exhibit, photograph, or video. Confirm that the referenced item was actually produced and indexed.`, recordIds: [item.recordId] })
+    }
+  })
+
+  const allDates = unique(extractedIdentifiers.flatMap((item) => item.dates)).map((date) => new Date(date)).filter((date) => !Number.isNaN(date.getTime())).sort((a, b) => a.getTime() - b.getTime())
+  for (let index = 1; index < allDates.length; index += 1) {
+    const days = Math.round((allDates[index].getTime() - allDates[index - 1].getTime()) / 86400000)
+    if (days >= 180) findings.push({ id: `date-gap-${index}`, type: 'DATE_GAP', severity: 'warning', description: `The produced record dates contain a ${days}-day gap between ${allDates[index - 1].toISOString().slice(0, 10)} and ${allDates[index].toISOString().slice(0, 10)}. Determine whether the gap reflects inactivity or missing records.`, recordIds: [] })
   }
 
   const seenHashes = new Map<string, string>()
