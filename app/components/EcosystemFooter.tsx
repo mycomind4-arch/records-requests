@@ -6,7 +6,7 @@ export function EcosystemFooter() {
     <footer className="ecosystemFooter">
       <div className="ecosystemFooter__inner">
         <div className="ecosystemFooter__brand">
-          <strong>My-CoMind <span>/ Records Requests</span></strong>
+          <strong>MailMyPDF <span>/ Records Requests</span></strong>
           <p>Build precise public-records requests, track agency responses, and audit what you received — all in one evidence-first workspace.</p>
           <p className="ecosystemFooter__parent">A MailMyPDF product</p>
         </div>
@@ -18,7 +18,7 @@ export function EcosystemFooter() {
               <li><Link href="/workflows/police-records">Police Records</Link></li>
               <li><Link href="/workflows/property-records">Property Records</Link></li>
               <li><Link href="/workflows/foia-request">FOIA Request</Link></li>
-              <li><Link href="/">Browse all workflows →</Link></li>
+              <li><Link href="/workflows">Browse all workflows →</Link></li>
             </ul>
           </div>
           <div className="ecosystemFooter__col">
@@ -40,7 +40,7 @@ export function EcosystemFooter() {
         </div>
       </div>
       <div className="ecosystemFooter__legal">
-        <span>© 2026 My-CoMind. Powered by MailMyPDF.</span>
+        <span>© 2026 MailMyPDF.</span>
         <span>Records Requests is not a law firm and does not provide legal advice.</span>
       </div>
     </footer>
