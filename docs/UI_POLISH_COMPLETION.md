@@ -124,3 +124,33 @@ None. All phases completed successfully.
 ## Commit
 
 All changes committed and pushed to `main`.
+
+---
+
+## Ecosystem Navigation (Follow-up)
+
+### Changes
+
+- **Created `app/lib/ecosystem.ts`** — central registry of MailMyPDF ecosystem product links (MailMyPDF, Notice Respond, Immigration Mail, Appeal Mail, Dispute Mail, Private Office). Single source of truth for all cross-product navigation.
+- **Created `app/components/EcosystemFooter.tsx`** — reusable footer with brand blurb, workflow links, workspace links, and MailMyPDF ecosystem product directory. Renders on all pages.
+- **Added `@/` path alias** to `tsconfig.json` (`baseUrl: "."`, `paths: {"@/*": ["./*"]}`) — standard Next.js convention for clean imports.
+- **Added MailMyPDF → link** to the header navigation on all surfaces:
+  - Landing page (`app/page.tsx`)
+  - Code Enforcement landing page (`app/workflows/code-enforcement-records/page.tsx`)
+  - Generic workflow landing page (`app/workflows/[slug]/page.tsx`)
+  - Code Enforcement builder (`app/workflows/code-enforcement-records/builder/builder.tsx`)
+  - Generic builder (`app/workflows/[slug]/builder/builder.tsx`)
+  - Planning Records builder (`app/workflows/planning-records/builder/builder.tsx`)
+  - Police Records builder (`app/workflows/police-records/builder/builder.tsx`)
+  - Dashboard sidebar (`app/dashboard/page.tsx`)
+- **Added EcosystemFooter** to all page surfaces (landing, workflow pages, builders, dashboard).
+- **Footer CSS** added to `globals.css`: three-column layout, brand section, legal bar, responsive collapse at 700px.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` | ✅ Pass |
+| `npm test` (45 files, 133 tests) | ✅ All pass |
+| `npm run build` | ✅ Pass |
+| `npm run validate:cloudflare` | ✅ Pass |

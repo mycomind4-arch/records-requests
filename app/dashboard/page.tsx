@@ -1,3 +1,5 @@
+import { EcosystemFooter } from "../components/EcosystemFooter"
+import { MAILMYPDF_HOME } from "../lib/ecosystem"
 import { getRequestStateRepositoryAsync } from '../../src/runtime'
 import { getApprovalPrincipal } from '../../src/authorization-runtime'
 import type { RequestState } from '../../src/request-repository'
@@ -22,6 +24,7 @@ export default async function Dashboard() {
           <a className="active" href="#">Command Center</a>
           <a href="#requests">Requests</a>
           <a href="#how">How it works</a>
+          <a href={MAILMYPDF_HOME}>MailMyPDF →</a>
         </nav>
       </aside>
       <main className="main">
@@ -138,6 +141,7 @@ export default async function Dashboard() {
           </>
         )}
       </main>
+    <EcosystemFooter />
     </div>
   )
 }

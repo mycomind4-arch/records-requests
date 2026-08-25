@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 
+import { MAILMYPDF_HOME } from "@/app/lib/ecosystem"
+import { EcosystemFooter } from "@/app/components/EcosystemFooter"
 const categories = [
   ['incident-report','Incident / offense reports'],
   ['arrest-records','Arrest / booking records'],
@@ -35,12 +37,13 @@ export function PoliceRecordsBuilder() {
     } catch(error) { setStatus('error'); setMessage(error instanceof Error ? error.message : 'Unable to create request') }
   }
   return <main className="landing workflowPage">
-    <header className="landingNav"><strong>My-CoMind <span>/ Records Requests</span></strong><nav><a href="/workflows/police-records">Workflow overview</a><a href="/dashboard">Workspace →</a></nav></header>
+    <header className="landingNav"><strong>My-CoMind <span>/ Records Requests</span></strong><nav><a href="/workflows/police-records">Workflow overview</a><a href={MAILMYPDF_HOME}>MailMyPDF →</a><a href="/dashboard">Workspace →</a></nav></header>
     <section className="workflowHero"><div className="eyebrow">POLICE RECORDS · REQUEST BUILDER</div><h1>Build the request around the incident.</h1><p className="lede">Give the agency the identifiers it already uses so the search can reach reports, dispatch, recordings, and case materials without unnecessary guesswork.</p></section>
     <section className="section" style={{maxWidth:920,margin:'0 auto'}}>
       <div className="card" style={{padding:28}}><h2>1. Identify the incident</h2><div className="grid" style={{marginTop:18}}>{([['agency','Agency *'],['department','Likely unit / custodian'],['incidentDateStart','Incident start date *'],['incidentDateEnd','Incident end date *'],['incidentNumber','Incident / report number'],['arrestNumber','Arrest / booking number'],['location','Incident location'],['person','Person involved'],['vehicle','Vehicle / plate / unit identifier']] as const).map(([key,label])=><label key={key}><span className="label">{label}</span><input value={form[key]} onChange={e=>set(key,e.target.value)} /></label>)}</div><label style={{display:'block',marginTop:18}}><span className="label">Incident or subject matter *</span><textarea rows={4} value={form.subjectMatter} onChange={e=>set('subjectMatter',e.target.value)} placeholder="e.g. traffic collision, arrest, use of force, burglary, welfare check" /></label></div>
       <div className="card" style={{padding:28,marginTop:16}}><h2>2. Choose the records</h2><p className="muted">You can start broad and narrow before approval.</p><div className="workflowList" style={{marginTop:16}}>{categories.map(([id,label])=><label className="workflowItem" key={id} style={{display:'flex',gap:12,alignItems:'center',cursor:'pointer'}}><input type="checkbox" checked={selected.includes(id)} onChange={e=>setSelected(current=>e.target.checked?[...current,id]:current.filter(value=>value!==id))}/><strong>{label}</strong></label>)}</div></div>
       <div className="card" style={{padding:28,marginTop:16}}><h2>3. Save and review</h2><p className="muted">The request remains owner-scoped and follows the normal review, approval, fulfillment, and tracking lifecycle.</p>{message && <div className={status==='error'?'issue':'pill'} style={{margin:'16px 0'}}>{message}</div>}<button className="primary" onClick={submit} disabled={status==='saving'}>{status==='saving'?'Saving…':'Create request →'}</button></div>
     </section>
+    <EcosystemFooter />
   </main>
 }

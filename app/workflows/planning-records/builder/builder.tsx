@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react'
 
+import { MAILMYPDF_HOME } from "@/app/lib/ecosystem"
+import { EcosystemFooter } from "@/app/components/EcosystemFooter"
 const categories = [
   ['planning-application','Planning / development applications'],
   ['zoning','Zoning and land-use records'],
@@ -87,12 +89,13 @@ export function PlanningRecordsBuilder() {
   }
 
   return <main className="landing workflowPage">
-    <header className="landingNav"><strong>My-CoMind <span>/ Records Requests</span></strong><nav><a href="/workflows/planning-records">Workflow overview</a><a href="/dashboard">Workspace →</a></nav></header>
+    <header className="landingNav"><strong>My-CoMind <span>/ Records Requests</span></strong><nav><a href="/workflows/planning-records">Workflow overview</a><a href={MAILMYPDF_HOME}>MailMyPDF →</a><a href="/dashboard">Workspace →</a></nav></header>
     <section className="workflowHero"><div className="eyebrow">PLANNING RECORDS · REQUEST BUILDER</div><h1>Build the request around the project, property, and planning file.</h1><p className="lede">Give the custodian the identifiers that connect the project to zoning, applications, staff reports, notices, approvals, and communications.</p></section>
     <section className="section" style={{maxWidth:920,margin:'0 auto'}}>
       <div className="card" style={{padding:28}}><h2>1. Identify the planning matter</h2><div className="grid" style={{marginTop:18}}>{([['agency','Agency *'],['jurisdiction','City / county / jurisdiction'],['address','Property address'],['parcel','Parcel / APN'],['projectNumber','Project / application number'],['projectName','Project name'],['applicant','Applicant / owner']] as const).map(([key,label])=><label key={key}><span className="label">{label}</span><input value={form[key]} onChange={e=>set(key,e.target.value)} /></label>)}</div><div className="grid" style={{marginTop:18}}>{([['dateStart','Record start date *'],['dateEnd','Record end date *']] as const).map(([key,label])=><label key={key}><span className="label">{label}</span><input type="date" value={form[key]} onChange={e=>set(key,e.target.value)} /></label>)}</div><label style={{display:'block',marginTop:18}}><span className="label">Planning matter / subject *</span><textarea rows={4} value={form.subjectMatter} onChange={e=>set('subjectMatter',e.target.value)} placeholder="e.g. rezoning, subdivision, development application, conditional use permit, site plan review" /></label></div>
       <div className="card" style={{padding:28,marginTop:16}}><h2>2. Choose the records</h2><p className="muted">Keep categories explicit so the production can later be checked for completeness.</p><div className="workflowList" style={{marginTop:16}}>{categories.map(([id,label])=><label className="workflowItem" key={id} style={{display:'flex',gap:12,alignItems:'center',cursor:'pointer'}}><input type="checkbox" checked={selected.includes(id)} onChange={e=>setSelected(current=>e.target.checked?[...current,id]:current.filter(value=>value!==id))}/><strong>{label}</strong></label>)}</div></div>
       <div className="card" style={{padding:28,marginTop:16}}><h2>3. Save and review</h2><p className="muted">The request is created through the same authenticated, owner-scoped request lifecycle used by the existing production workflows.</p>{message && <div className={status==='error'?'issue':'pill'} style={{margin:'16px 0'}}>{message}</div>}<button className="primary" onClick={submit} disabled={status==='saving'}>{status==='saving'?'Saving…':'Create request →'}</button></div>
     </section>
+    <EcosystemFooter />
   </main>
 }

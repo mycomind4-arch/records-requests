@@ -1,3 +1,5 @@
+import { EcosystemFooter } from '@/app/components/EcosystemFooter'
+import { MAILMYPDF_HOME } from '@/app/lib/ecosystem'
 import Link from 'next/link'
 
 const faqs = [
@@ -72,7 +74,7 @@ export default function CodeEnforcementRecordsLanding() {
 
   return <main className="landing workflowPage">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-    <header className="landingNav"><strong>My-CoMind <span>/ Records Requests</span></strong><nav><Link href="/">All workflows</Link><a href="/#how">How it works</a><Link href="/dashboard">Workspace →</Link></nav></header>
+    <header className="landingNav"><strong>My-CoMind <span>/ Records Requests</span></strong><nav><Link href="/">All workflows</Link><a href="/#how">How it works</a><a href={MAILMYPDF_HOME}>MailMyPDF →</a><Link href="/dashboard">Workspace →</Link></nav></header>
 
     <section className="workflowHero">
       <div className="eyebrow">PROPERTY & CODE ENFORCEMENT · PUBLIC RECORDS</div>
@@ -118,5 +120,6 @@ export default function CodeEnforcementRecordsLanding() {
     </section>
 
     <section className="final"><div className="eyebrow">READY TO SEARCH THE FILE</div><h2>Build the request around the property or enforcement matter.</h2><p>Start with the agency, address, case information, date range, and the records you want. The builder turns that information into a structured request ready for review.</p><Link className="primary" href="/workflows/code-enforcement-records/builder">Build a Code Enforcement Records Request →</Link></section>
+    <EcosystemFooter />
   </main>
 }
