@@ -18,7 +18,7 @@ const CATEGORIES = [
 
 const INITIAL = Object.fromEntries([
   ['agency', ''], ['department', ''], ['propertyAddress', ''], ['parcelNumber', ''], ['caseNumber', ''],
-  ['violationNumber', ''], ['relatedParty', ''], ['dateStart', ''], ['dateEnd', ''], ['subjectMatter', ''],
+  ['violationNumber', ''], ['relatedParty', ''], ['jurisdiction', ''], ['dateStart', ''], ['dateEnd', ''], ['subjectMatter', ''],
 ]) as Record<string, string>
 
 export default function CodeEnforcementBuilder() {
@@ -44,7 +44,7 @@ export default function CodeEnforcementBuilder() {
     return issues
   }, [categories, fields])
 
-  const canContinue = step === 1 ? Boolean(fields.agency && fields.subjectMatter && (fields.propertyAddress || fields.caseNumber) && fields.dateStart && fields.dateEnd) : validation.length === 0
+  const canContinue = Boolean(fields.agency && fields.subjectMatter && (fields.propertyAddress || fields.caseNumber) && fields.dateStart && fields.dateEnd)
 
   const createRequest = async () => {
     setSubmitting(true)
@@ -73,7 +73,7 @@ export default function CodeEnforcementBuilder() {
         body: JSON.stringify({
           title: `Code Enforcement Records — ${fields.propertyAddress || fields.caseNumber || fields.subjectMatter}`,
           agency: fields.agency,
-          jurisdiction: fields.jurisdiction,
+          jurisdiction: fields.jurisdiction || undefined,
           purpose: 'Research and document the code-enforcement history and agency records for the identified matter.',
           scope: JSON.stringify({ workflow: 'code-enforcement-records', ...fields, categories }),
           items,
@@ -105,11 +105,11 @@ export default function CodeEnforcementBuilder() {
             ['agency', 'Agency / records custodian', true], ['department', 'Likely department or custodian', false],
             ['propertyAddress', 'Property address', false], ['parcelNumber', 'Parcel / APN', false],
             ['caseNumber', 'Code enforcement case number', false], ['violationNumber', 'Violation / citation number', false],
-            ['relatedParty', 'Owner / operator / related person or entity', false], ['dateStart', 'Records start date', true, 'date'],
-            ['dateEnd', 'Records end date', true, 'date'], ['subjectMatter', 'Issue or subject matter', true],
+            ['relatedParty', 'Owner / operator / related person or entity', false], ['jurisdiction', 'Jurisdiction', false],
+            ['dateStart', 'Records start date', true, 'date'], ['dateEnd', 'Records end date', true, 'date'], ['subjectMatter', 'Issue or subject matter', true],
           ].map(([id, label, required, type]) => <label key={id as string}>{label as string}{required ? ' *' : ''}<input type={(type as string) || 'text'} value={fields[id as string]} onChange={(e) => update(id as string, e.target.value)} /></label>)}
         </div>
-        <div className="builder-note">A property address or case number is enough to start. Add the APN, violation number, related party, or likely department when known.</div>
+        <div className="builder-note">A property address or case number is enough to start. Add the APN, violation number, related party, jurisdiction, or likely department when known.</div>
         {validation.length > 0 && <div className="builder-warning">{validation.map((issue) => <div key={issue}>• {issue}</div>)}</div>}
         <button className="primary" disabled={!canContinue} onClick={() => setStep(2)}>Choose records →</button>
       </section>}
@@ -124,7 +124,7 @@ export default function CodeEnforcementBuilder() {
 
       {step === 3 && <section className="builder-card">
         <h2>Review before creating the request</h2>
-        <div className="review-grid"><div><span>Agency</span><strong>{fields.agency}</strong></div><div><span>Property</span><strong>{fields.propertyAddress || 'Not provided'}</strong></div><div><span>Case</span><strong>{fields.caseNumber || 'Not provided'}</strong></div><div><span>Parcel / APN</span><strong>{fields.parcelNumber || 'Not provided'}</strong></div><div><span>Date range</span><strong>{fields.dateStart} → {fields.dateEnd}</strong></div><div><span>Matter</span><strong>{fields.subjectMatter}</strong></div></div>
+        <div className="review-grid"><div><span>Agency</span><strong>{fields.agency}</strong></div><div><span>Property</span><strong>{fields.propertyAddress || 'Not provided'}</strong></div><div><span>Case</span><strong>{fields.caseNumber || 'Not provided'}</strong></div><div><span>Parcel / APN</span><strong>{fields.parcelNumber || 'Not provided'}</strong></div><div><span>Jurisdiction</span><strong>{fields.jurisdiction || 'Not provided'}</strong></div><div><span>Date range</span><strong>{fields.dateStart} → {fields.dateEnd}</strong></div><div><span>Matter</span><strong>{fields.subjectMatter}</strong></div></div>
         <div className="review-scope"><h3>Records to request</h3>{selectedCategories.map(([id, label]) => <div className="review-item" key={id}><strong>{label}</strong><span>Search for the identified matter during the selected date range{fields.department ? ` through ${fields.department}` : ''}.</span></div>)}</div>
         {error && <div className="builder-error">{error}</div>}
         <div className="builder-actions"><button className="secondary" onClick={() => setStep(2)} disabled={submitting}>← Edit records</button><button className="primary" onClick={createRequest} disabled={submitting}>{submitting ? 'Creating…' : 'Create request →'}</button></div>
