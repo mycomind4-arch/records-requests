@@ -1,4 +1,4 @@
-import type { D1DatabaseLike, D1Result } from '../request-repository'
+import type { D1DatabaseLike } from '../request-repository'
 
 export type FulfillmentReservation = {
   id: string
@@ -80,5 +80,3 @@ export async function markFulfillmentFailed(
 export function isSuccessfulReservation(result: ReservationResult): boolean {
   return result.kind === 'reserved' || result.kind === 'already_pending' || result.kind === 'already_accepted'
 }
-
-export type _UnusedD1Result = D1Result
