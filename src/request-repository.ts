@@ -86,10 +86,11 @@ async function buildAuditEvent(
   const eventHash = await computeAuditEventHash({ ...input, previousHash })
   const statement = db.prepare(
     `INSERT INTO audit_events (id, request_id, event_type, actor_type, actor_id, payload_json, previous_hash, event_hash, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?
+     WHERE EXISTS (SELECT 1 FROM requests WHERE id = ? AND audit_tail_hash IS ?)`,
   ).bind(
     crypto.randomUUID(), input.requestId, input.eventType, input.actorType, input.actorId ?? null,
-    JSON.stringify(input.payload), previousHash, eventHash, input.createdAt,
+    JSON.stringify(input.payload), previousHash, eventHash, input.createdAt, input.requestId, eventHash,
   )
   return { statement, eventHash }
 }
@@ -106,13 +107,16 @@ async function appendAuditEvent(
 
   if (db.batch) {
     const results = await db.batch([tailUpdate, statement])
-    if ((results[0]?.meta?.changes ?? 0) !== 1) throw new Error('Audit append conflicted with another writer')
+    if ((results[0]?.meta?.changes ?? 0) !== 1 || (results[1]?.meta?.changes ?? 0) !== 1) {
+      throw new Error('Audit append conflicted with another writer')
+    }
     return
   }
 
   const updateResult = await tailUpdate.run()
   if (!updateResult.success || !(updateResult.meta?.changes)) throw new Error('Audit append conflicted with another writer')
-  await statement.run()
+  const eventResult = await statement.run()
+  if (!eventResult.success || !(eventResult.meta?.changes)) throw new Error('Audit append failed after tail update')
 }
 
 export function createD1RequestRepository(db: D1DatabaseLike): RequestStateRepository {
@@ -188,11 +192,14 @@ export function createD1RequestRepository(db: D1DatabaseLike): RequestStateRepos
 
       if (db.batch) {
         const results = await db.batch([update, auditStatement])
-        if ((results[0]?.meta?.changes ?? 0) !== 1) throw new Error('Request transition conflicted with another writer')
+        if ((results[0]?.meta?.changes ?? 0) !== 1 || (results[1]?.meta?.changes ?? 0) !== 1) {
+          throw new Error('Request transition conflicted with another writer')
+        }
       } else {
         const result = await update.run()
         if (!result.success || !(result.meta?.changes)) throw new Error('Request transition conflicted with another writer')
-        await auditStatement.run()
+        const auditResult = await auditStatement.run()
+        if (!auditResult.success || !(auditResult.meta?.changes)) throw new Error('Request transition audit append failed')
       }
 
       const record = await this.getRequest(id)
