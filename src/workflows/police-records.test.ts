@@ -4,15 +4,10 @@ import { buildPoliceRecordsRequest, policeRecordsWorkflow } from './police-recor
 describe('police records workflow', () => {
   it('builds a targeted request around incident identifiers', () => {
     const request = buildPoliceRecordsRequest({
-      agency: 'Example Police Department',
-      incidentNumber: '2026-00123',
-      location: '100 Main St',
-      incidentDateStart: '2026-01-01',
-      incidentDateEnd: '2026-01-31',
-      subjectMatter: 'vehicle collision',
+      agency: 'Example Police Department', incidentNumber: '2026-00123', location: '100 Main St',
+      incidentDateStart: '2026-01-01', incidentDateEnd: '2026-01-31', subjectMatter: 'vehicle collision',
       categories: ['incident-report', 'dispatch-cad', 'body-camera'],
     })
-
     expect(request.title).toContain('2026-00123')
     expect(request.items).toHaveLength(3)
     expect(request.items[0].description).toContain('incident/report number 2026-00123')
@@ -27,14 +22,15 @@ describe('police records workflow', () => {
   })
 
   it('rejects a request with no usable incident identifier', () => {
+    const request = buildPoliceRecordsRequest({ agency:'Example PD', incidentDateStart:'2026-01-01', incidentDateEnd:'2026-01-31', subjectMatter:'incident' })
+    expect(policeRecordsWorkflow.validateRequest(request)).toEqual(expect.arrayContaining([expect.objectContaining({ field:'identifiers' })]))
+  })
+
+  it('ignores unknown categories rather than allowing arbitrary request items', () => {
     const request = buildPoliceRecordsRequest({
-      agency: 'Example PD',
-      incidentDateStart: '2026-01-01',
-      incidentDateEnd: '2026-01-31',
-      subjectMatter: 'incident',
+      agency:'Example PD', incidentNumber:'2026-1', incidentDateStart:'2026-01-01', incidentDateEnd:'2026-01-31', subjectMatter:'incident',
+      categories:['incident-report','<script>alert(1)</script>','unknown-system'],
     })
-    expect(policeRecordsWorkflow.validateRequest(request)).toEqual(expect.arrayContaining([
-      expect.objectContaining({ field: 'identifiers' }),
-    ]))
+    expect(request.items.map((item) => item.category)).toEqual(['incident-report'])
   })
 })
