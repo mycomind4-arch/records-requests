@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import assert from "node:assert/strict";
+import assert from 'node:assert/strict'
 import { canTransition, createD1RequestRepository, type D1DatabaseLike, type D1Statement } from './request-repository'
 
 const makeDb = () => {
@@ -17,9 +17,7 @@ const makeDb = () => {
           return (typeof id === 'string' ? rows.get(id) ?? null : null) as T | null
         },
         async all() { return { results: [] } },
-        async run() {
-          return { success: true, meta: { changes: 1 } }
-        },
+        async run() { return { success: true, meta: { changes: 1 } } },
       }
       return statement
     },
@@ -40,7 +38,7 @@ describe('request repository transitions', () => {
     assert.equal(canTransition('approved', 'submitted'), false)
   })
 
-  it('creates a repository that emits SQL for request, items, and audit rows', async () => {
+  it('creates an owner-scoped request and audit row', async () => {
     const { db, calls } = makeDb()
     const repo = createD1RequestRepository(db)
     const result = await repo.createRequest({
@@ -49,11 +47,13 @@ describe('request repository transitions', () => {
       normalizedTitle: 'Property records',
       normalizedAgency: 'County Clerk',
       items: [{ category: 'permits', description: 'All permits from 2024' }],
-    })
+    }, 'user-123')
     assert.match(result.id, /^[0-9a-f-]{36}$/)
-    assert.equal(calls.length, 3)
-    assert.match(calls[0].sql, /INSERT INTO requests/)
-    assert.match(calls[1].sql, /INSERT INTO request_items/)
-    assert.match(calls[2].sql, /INSERT INTO audit_events/)
+    assert.equal(calls.length, 4)
+    assert.match(calls[0].sql, /SELECT event_hash FROM audit_events/)
+    assert.match(calls[1].sql, /INSERT INTO requests/)
+    assert.match(calls[1].sql, /owner_id/)
+    assert.match(calls[2].sql, /INSERT INTO request_items/)
+    assert.match(calls[3].sql, /INSERT INTO audit_events/)
   })
 })
