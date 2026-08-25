@@ -39,10 +39,18 @@
 
 These are deployment/ecosystem gates, not reasons to create a parallel Records Requests architecture.
 
-## Workflow boundary
+## Workflow program
 
-The first flagship workflow is `code-enforcement-records`.
+### Workflow 1 — `code-enforcement-records`
 
-It should provide Records-specific domain intelligence for property/case identification, violations, inspections, complaints, photographs, notices, correspondence, enforcement actions, permits, custodians, date ranges, production completeness, contradictions, evidence-backed findings, and escalation strategy.
+Flagship reference workflow. Its domain intelligence covers property/case identification, violations, inspections, complaints, photographs, notices, correspondence, enforcement actions, permits, custodians, date ranges, production completeness, contradictions, evidence-backed findings, authority-aware research, and escalation strategy.
 
-It inherits generic persistence, authorization, lifecycle, proof, fulfillment, and audit semantics from the shared ecosystem contracts.
+### Workflow 2 — `property-permit-records`
+
+Existing workflow upgraded to the same multi-LLM production-analysis standard. It covers building permits, applications, inspections, approved plans, site plans, plan-review comments, correction notices, certificates of occupancy, permit history, and correspondence. The production path now requires a two-provider LLM quorum, runs classification, extraction, contradiction analysis, and strategy, and records provider provenance/confidence.
+
+It deliberately reuses the shared workflow factory, persistence, authorization, lifecycle, approval, fulfillment, audit, evidence, and MailMyPDF contracts rather than creating a parallel architecture.
+
+## Quality rule
+
+A workflow is not considered production-ready merely because its domain module exists. Required intelligence must be imported, invoked by the production path, tested end-to-end, fail closed when its multi-LLM quorum is unavailable, and preserve provenance into downstream strategy/follow-up decisions.
