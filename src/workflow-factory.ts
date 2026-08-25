@@ -1,4 +1,5 @@
 import type { CreateRequestInput, ValidatedRequest } from './request-service'
+import type { RecordsDomainCapability, RecordsDomainPackManifest } from './workflows/domain-pack'
 
 export type WorkflowField = {
   id: string
@@ -24,6 +25,8 @@ export type RecordsWorkflowDefinition = {
     canonicalPath: string
   }
   intake: readonly WorkflowField[]
+  capabilities: readonly RecordsDomainCapability[]
+  intakeVersion?: string
   request: {
     categories: readonly string[]
     build(input: Record<string, unknown>): CreateRequestInput
@@ -37,7 +40,8 @@ export type RecordsWorkflowDefinition = {
 }
 
 export type RecordsWorkflow = RecordsWorkflowDefinition & {
-  readonly contractVersion: 1
+  readonly contractVersion: 2
+  readonly manifest: RecordsDomainPackManifest
   validateRequest(request: ValidatedRequest): readonly { field: string; message: string }[]
 }
 
@@ -45,6 +49,7 @@ export function createRecordsWorkflow(definition: RecordsWorkflowDefinition): Re
   if (!definition.id.trim()) throw new Error('Workflow id is required')
   if (!definition.name.trim()) throw new Error('Workflow name is required')
   if (!definition.request.categories.length) throw new Error(`Workflow ${definition.id} must define record categories`)
+  if (!definition.capabilities.length) throw new Error(`Workflow ${definition.id} must declare capabilities`)
   if (!definition.seo.canonicalPath.startsWith('/workflows/')) {
     throw new Error(`Workflow ${definition.id} canonicalPath must be under /workflows/`)
   }
@@ -55,9 +60,22 @@ export function createRecordsWorkflow(definition: RecordsWorkflowDefinition): Re
     ids.add(field.id)
   }
 
+  const uniqueCapabilities = new Set(definition.capabilities)
+  if (uniqueCapabilities.size !== definition.capabilities.length) {
+    throw new Error(`Workflow ${definition.id} has duplicate capabilities`)
+  }
+
+  const manifest: RecordsDomainPackManifest = {
+    id: definition.id,
+    name: definition.name,
+    version: definition.intakeVersion ?? '1.0.0',
+    capabilities: definition.capabilities,
+  }
+
   return {
     ...definition,
-    contractVersion: 1,
+    contractVersion: 2,
+    manifest,
     validateRequest(request) {
       return definition.validate?.(request) ?? []
     },
