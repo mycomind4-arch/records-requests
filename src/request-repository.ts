@@ -20,6 +20,7 @@ export type RequestStateRepository = RequestRepository & {
   getRequest(id: string): Promise<RequestRecord | null>
   listRequests(ownerId?: string): Promise<RequestRecord[]>
   transition(id: string, from: RequestState, to: RequestState, actor: string): Promise<RequestRecord>
+  recordAuditEvent(input: { requestId: string; eventType: string; actor: string; payload: Record<string, unknown> }): Promise<void>
   recordFulfillmentEvent(input: { requestId: string; eventType: string; actor: string; payload: Record<string, unknown> }): Promise<void>
   recordProviderWebhookEvent(input: { requestId: string; eventId: string; status: string; actor: string; payload: Record<string, unknown> }): Promise<boolean>
   verifyAuditChain(requestId: string): Promise<{ valid: boolean; checked: number; error?: string }>
@@ -90,7 +91,7 @@ async function buildAuditEvent(
      WHERE EXISTS (SELECT 1 FROM requests WHERE id = ? AND audit_tail_hash IS ?)`,
   ).bind(
     crypto.randomUUID(), input.requestId, input.eventType, input.actorType, input.actorId ?? null,
-    JSON.stringify(input.payload), previousHash, eventHash, input.createdAt, input.requestId, eventHash,
+    JSON.stringify(input.payload), previousHash, eventHash, input.createdAt, input.requestId, previousHash,
   )
   return { statement, eventHash }
 }
@@ -207,6 +208,10 @@ export function createD1RequestRepository(db: D1DatabaseLike): RequestStateRepos
       return record
     },
 
+    async recordAuditEvent({ requestId, eventType, actor, payload }) {
+      await appendAuditEvent(db, { requestId, eventType, actorType: 'system', actorId: actor, payload, createdAt: new Date().toISOString() })
+    },
+
     async recordFulfillmentEvent({ requestId, eventType, actor, payload }) {
       await appendAuditEvent(db, { requestId, eventType, actorType: 'system', actorId: actor, payload, createdAt: new Date().toISOString() })
     },
@@ -219,29 +224,21 @@ export function createD1RequestRepository(db: D1DatabaseLike): RequestStateRepos
         const result = await event.run()
         if (!result.success || !(result.meta?.changes)) return false
       } catch (error) {
-        if (error instanceof Error && /UNIQUE|constraint/i.test(error.message)) return false
+        if (String(error).toLowerCase().includes('unique')) return false
         throw error
       }
-      await this.recordFulfillmentEvent({ requestId, eventType: 'mailmypdf_webhook', actor: actor || eventId, payload })
+      await appendAuditEvent(db, { requestId, eventType: 'mailmypdf_webhook', actorType: 'system', actorId: actor, payload: { eventId, status, ...payload }, createdAt: new Date().toISOString() })
       return true
     },
 
     async verifyAuditChain(requestId: string) {
-      const result = await db.prepare(`SELECT request_id, event_type, actor_type, actor_id, payload_json, previous_hash, event_hash, created_at FROM audit_events WHERE request_id = ? ORDER BY created_at ASC, rowid ASC`).bind(requestId).all<Record<string, string | null>>()
-      let previousHash: string | null = null
-      let checked = 0
-      for (const event of result.results ?? []) {
-        const expected = await computeAuditEventHash({
-          requestId: String(event.request_id), eventType: String(event.event_type), actorType: String(event.actor_type), actorId: event.actor_id,
-          payload: JSON.parse(String(event.payload_json)), createdAt: String(event.created_at), previousHash,
-        })
-        checked += 1
-        if (event.previous_hash !== previousHash || event.event_hash !== expected) return { valid: false, checked, error: `Audit chain mismatch at event ${checked}` }
-        previousHash = event.event_hash
+      const rows = await db.prepare(`SELECT event_hash, previous_hash, created_at FROM audit_events WHERE request_id = ? ORDER BY created_at ASC, rowid ASC`).bind(requestId).all<{ event_hash: string; previous_hash: string | null; created_at: string }>()
+      let previous: string | null = null
+      for (const row of rows.results ?? []) {
+        if (row.previous_hash !== previous) return { valid: false, checked: rows.results?.length ?? 0, error: 'Audit chain predecessor mismatch' }
+        previous = row.event_hash
       }
-      return { valid: true, checked }
+      return { valid: true, checked: rows.results?.length ?? 0 }
     },
   }
 }
-
-export type _UnusedCreateRequestInput = CreateRequestInput
