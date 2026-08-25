@@ -18,26 +18,13 @@
     {
       "binding": "RECORDS_DB",
       "database_name": "records-requests",
-      "database_id": "REPLACE_WITH_REAL_D1_DATABASE_ID"
+      "database_id": "ee2cb729-0ea3-4aa7-a1aa-ca49b6513071"
     }
   ],
   "vars": {
     "MAILMYPDF_FULFILLMENT_ENABLED": "false"
   },
   "env": {
-    "staging": {
-      "name": "records-requests-staging",
-      "vars": {
-        "MAILMYPDF_FULFILLMENT_ENABLED": "false"
-      },
-      "d1_databases": [
-        {
-          "binding": "RECORDS_DB",
-          "database_name": "records-requests-staging",
-          "database_id": "REPLACE_WITH_REAL_STAGING_D1_DATABASE_ID"
-        }
-      ]
-    },
     "production": {
       "name": "records-requests",
       "vars": {
@@ -47,7 +34,7 @@
         {
           "binding": "RECORDS_DB",
           "database_name": "records-requests",
-          "database_id": "REPLACE_WITH_REAL_D1_DATABASE_ID"
+          "database_id": "ee2cb729-0ea3-4aa7-a1aa-ca49b6513071"
         }
       ]
     }

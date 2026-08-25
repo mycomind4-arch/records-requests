@@ -6,7 +6,6 @@ import type { FulfillmentRequest } from '../../../../src/fulfillment'
 import { canApproveWithRole, getApprovalPrincipal } from '../../../../src/authorization-runtime'
 import { markFulfillmentAccepted, markFulfillmentFailed, reserveFulfillmentAttempt } from '../../../../src/fulfillment/reservation'
 
-export const runtime = 'edge'
 export const dynamic = 'force-dynamic'
 
 type SubmitBody = {
