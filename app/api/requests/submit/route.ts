@@ -17,8 +17,10 @@ type SubmitBody = {
   mailingClass?: 'certified' | 'registered' | 'first_class'
 }
 
-async function reconcileFailure(repository: Awaited<ReturnType<typeof getRequestStateRepositoryAsync>>, id: string, actor: string, error: unknown) {
-  const current = await repository?.getRequest(id)
+type RequestRepository = NonNullable<Awaited<ReturnType<typeof getRequestStateRepositoryAsync>>>
+
+async function reconcileFailure(repository: RequestRepository, id: string, actor: string, error: unknown) {
+  const current = await repository.getRequest(id)
   if (current?.status === 'queued') {
     try { await repository.transition(id, 'queued', 'failed', actor) } catch { /* A provider callback may have reconciled state concurrently. */ }
   }
