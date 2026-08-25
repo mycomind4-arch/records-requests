@@ -1,21 +1,29 @@
 import { describe, expect, it } from 'vitest'
 import { executeWithMultipleLlmProviders, type LlmProvider } from './multi-llm'
 
-const provider = (id: string, output: string, confidence = 0.8): LlmProvider => ({
-  id,
-  async execute() {
-    return { provider: id, model: `${id}-model`, output, confidence, warnings: [] }
-  },
-})
+type Output = { value: string }
+
+function provider(id: string, output: Output): LlmProvider {
+  return {
+    id,
+    execute: async <I, O>() => ({
+      provider: id,
+      model: `${id}-model`,
+      output: output as O,
+      confidence: 0.9,
+      warnings: [],
+    }),
+  }
+}
 
 describe('multi-LLM orchestration', () => {
   it('uses consensus and retains every provider result', async () => {
     const result = await executeWithMultipleLlmProviders(
-      [provider('provider-a', 'same'), provider('provider-b', 'same'), provider('provider-c', 'different')],
-      { id: 'task', input: 'record', outputSchema: 'string' },
+      [provider('provider-a', { value: 'same' }), provider('provider-b', { value: 'same' }), provider('provider-c', { value: 'different' })],
+      { id: 'task', input: 'record', outputSchema: 'object' },
     )
 
-    expect(result.selected.output).toBe('same')
+    expect(result.selected.output).toEqual({ value: 'same' })
     expect(result.candidates).toHaveLength(3)
     expect(result.agreement).toBeCloseTo(2 / 3)
     expect(result.warnings).toContain('LLM providers disagreed across 2 distinct outputs')
@@ -24,7 +32,7 @@ describe('multi-LLM orchestration', () => {
   it('fails closed when fewer than the minimum providers succeed', async () => {
     const failing: LlmProvider = {
       id: 'failed',
-      async execute() { throw new Error('provider unavailable') },
+      async execute<I, O>() { throw new Error('provider unavailable') },
     }
 
     await expect(executeWithMultipleLlmProviders(
@@ -36,8 +44,8 @@ describe('multi-LLM orchestration', () => {
 
   it('supports an explicit consensus quorum', async () => {
     const result = await executeWithMultipleLlmProviders(
-      [provider('a', 'one'), provider('b', 'two')],
-      { id: 'task', input: 'record', outputSchema: 'string' },
+      [provider('a', { value: 'one' }), provider('b', { value: 'two' })],
+      { id: 'task', input: 'record', outputSchema: 'object' },
       { quorum: 0.75 },
     )
 
