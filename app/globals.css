@@ -15,6 +15,7 @@
   --success-bg: #ecfdf5; --success-border: #a7f3d0; --success-text: #047857;
   --shadow-sm: 0 1px 2px rgba(28,31,38,.04),0 1px 3px rgba(28,31,38,.03);
   --shadow-card: 0 1px 0 rgba(28,31,38,.05),0 2px 8px -2px rgba(28,31,38,.05),0 12px 28px -10px rgba(28,31,38,.08);
+  --shadow-hover: 0 1px 0 rgba(28,31,38,.08),0 8px 24px -8px rgba(28,31,38,.1),0 28px 48px -20px rgba(28,31,38,.14);
   --r-sm: 6px; --r-md: 8px; --r-lg: 14px; --r-xl: 20px;
 }
 *{box-sizing:border-box} html,body{margin:0;min-height:100%}
@@ -36,11 +37,10 @@ h1,h2,h3,h4,.font-serif{font-family:'Instrument Serif',ui-serif,Georgia,serif;fo
 .ecosystemNav__products{position:relative}.ecosystemNav__products summary{list-style:none;cursor:pointer}.ecosystemNav__products summary::-webkit-details-marker{display:none}.ecosystemNav__products[open] summary{background:rgba(28,31,38,.04);color:var(--ink)}
 .ecosystemNav__menu{position:absolute;right:0;top:43px;width:290px;padding:8px;border:1px solid var(--card-border);border-radius:12px;background:rgba(254,253,251,.98);box-shadow:var(--shadow-hover);z-index:60}.ecosystemNav__menuItem{display:block;padding:9px 10px;border-radius:8px}.ecosystemNav__menuItem:hover{background:var(--paper)}.ecosystemNav__menuItem span{display:block;font-size:13px;font-weight:600;color:var(--ink)}.ecosystemNav__menuItem small{display:block;margin-top:2px;font-size:11px;line-height:1.35;color:var(--ink-muted)}.ecosystemNav__menuAll{display:block;margin-top:4px;padding:10px;border-top:1px solid var(--rule);font-size:12px;font-weight:600;color:var(--accent)}
 
-/* ── Landing hero ── */
-.directoryHero,.workflowHero{padding:80px 28px 64px;max-width:1020px}.workflowHero{max-width:980px}.directoryHero h1,.workflowHero h1{font-size:clamp(40px,6vw,68px);line-height:1.02;letter-spacing:-.04em;margin:14px 0 18px}.cta{display:flex;gap:12px;margin-top:28px;align-items:center;flex-wrap:wrap}.cta .primary{padding:14px 22px;font-size:15px;border-radius:var(--r-md)}.cta .secondary{padding:13px 20px;font-size:15px}.trust{margin-top:20px;color:var(--ink-muted);font-size:12px;letter-spacing:.02em}
-.section{padding:72px 28px;border-top:1px solid var(--rule)}.section h2{font-size:clamp(28px,3.5vw,44px);letter-spacing:-.03em;margin:10px 0 20px;max-width:680px}
-.directoryIntro{color:var(--ink-soft);line-height:1.6;font-size:16px;max-width:640px;margin-bottom:36px}.workflowGroups{display:grid;gap:48px}.workflowGroup{display:grid;grid-template-columns:.7fr 1.3fr;gap:32px;align-items:start}.workflowGroup h3{font-size:24px;margin:0 0 6px}.workflowGroup>div>p{color:var(--ink-soft);line-height:1.55;font-size:14px;margin:0}.workflowCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.workflowCard{display:flex;flex-direction:column}
+/* Legacy landing header: hidden after migration to the ecosystem shell. */
+.landingNav{display:none}
 
+.directoryHero,.workflowHero{padding:80px 28px 64px;max-width:1020px}.workflowHero{max-width:980px}.directoryHero h1,.workflowHero h1{font-size:clamp(40px,6vw,68px);line-height:1.02;letter-spacing:-.04em;margin:14px 0 18px}.cta{display:flex;gap:12px;margin-top:28px;align-items:center;flex-wrap:wrap}.cta .primary{padding:14px 22px;font-size:15px;border-radius:var(--r-md)}.cta .secondary{padding:13px 20px;font-size:15px}.trust{margin-top:20px;color:var(--ink-muted);font-size:12px;letter-spacing:.02em}
+.section{padding:72px 28px;border-top:1px solid var(--rule)}.section h2{font-size:clamp(28px,3.5vw,44px);letter-spacing:-.03em;margin:10px 0 20px;max-width:680px}.directoryIntro{color:var(--ink-soft);line-height:1.6;font-size:16px;max-width:640px;margin-bottom:36px}.workflowGroups{display:grid;gap:48px}.workflowGroup{display:grid;grid-template-columns:.7fr 1.3fr;gap:32px;align-items:start}.workflowGroup h3{font-size:24px;margin:0 0 6px}.workflowGroup>div>p{color:var(--ink-soft);line-height:1.55;font-size:14px;margin:0}.workflowCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.workflowCard{display:flex;flex-direction:column}
 @media(max-width:900px){.ecosystemNav__brand{min-width:auto}.ecosystemNav__links{gap:0}.ecosystemNav__links>a:nth-of-type(1),.ecosystemNav__links>a:nth-of-type(3),.ecosystemNav__links>a:nth-of-type(4),.ecosystemNav__products{display:none}.ecosystemNav__link{padding:8px 7px}.ecosystemNav__cta{padding:8px 12px}}
 @media(max-width:640px){.ecosystemNav__wordmark{font-size:18px}.ecosystemNav__links>a:nth-of-type(2){display:none}.ecosystemNav__cta{font-size:12px}.ecosystemNav__inner{width:min(100% - 20px,1152px)}.directoryHero,.workflowHero{padding:60px 20px 48px}.section{padding:58px 20px}.workflowGroup{grid-template-columns:1fr}.workflowCards{grid-template-columns:1fr}}
-
