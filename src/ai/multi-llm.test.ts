@@ -11,7 +11,7 @@ function provider(id: string, output: Output): LlmProvider {
       model: `${id}-model`,
       output: output as O,
       confidence: 0.9,
-      warnings: [],
+      warnings: [] as readonly string[],
     }),
   }
 }
