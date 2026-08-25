@@ -38,7 +38,7 @@ describe('request repository transitions', () => {
     assert.equal(canTransition('approved', 'submitted'), false)
   })
 
-  it('creates an owner-scoped request and audit row', async () => {
+  it('creates an owner-scoped request and audit row atomically', async () => {
     const { db, calls } = makeDb()
     const repo = createD1RequestRepository(db)
     const result = await repo.createRequest({
@@ -49,11 +49,10 @@ describe('request repository transitions', () => {
       items: [{ category: 'permits', description: 'All permits from 2024' }],
     }, 'user-123')
     assert.match(result.id, /^[0-9a-f-]{36}$/)
-    assert.equal(calls.length, 4)
-    assert.match(calls[0].sql, /SELECT event_hash FROM audit_events/)
-    assert.match(calls[1].sql, /INSERT INTO requests/)
-    assert.match(calls[1].sql, /owner_id/)
-    assert.match(calls[2].sql, /INSERT INTO request_items/)
-    assert.match(calls[3].sql, /INSERT INTO audit_events/)
+    assert.equal(calls.length, 3)
+    assert.match(calls[0].sql, /INSERT INTO requests/)
+    assert.match(calls[0].sql, /owner_id/)
+    assert.match(calls[1].sql, /INSERT INTO request_items/)
+    assert.match(calls[2].sql, /INSERT INTO audit_events/)
   })
 })
