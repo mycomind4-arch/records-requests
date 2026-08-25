@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createRecordsWorkflow } from './workflow-factory'
+import type { ValidatedRequest } from './request-service'
 
 describe('records workflow factory', () => {
   const base = {
@@ -21,12 +22,17 @@ describe('records workflow factory', () => {
 
   it('creates a versioned workflow contract', () => {
     const workflow = createRecordsWorkflow(base)
+    const validated = {
+      ...base.request.build({}),
+      normalizedTitle: 'Code enforcement',
+      normalizedAgency: 'County',
+    } satisfies ValidatedRequest
     expect(workflow.contractVersion).toBe(1)
-    expect(workflow.validateRequest(base.request.build({}))).toEqual([])
+    expect(workflow.validateRequest(validated)).toEqual([])
   })
 
   it('rejects invalid workflow definitions', () => {
-    expect(() => createRecordsWorkflow({ ...base, id: '', })).toThrow()
+    expect(() => createRecordsWorkflow({ ...base, id: '' })).toThrow()
     expect(() => createRecordsWorkflow({ ...base, request: { ...base.request, categories: [] } })).toThrow()
     expect(() => createRecordsWorkflow({ ...base, seo: { ...base.seo, canonicalPath: '/wrong' } })).toThrow()
   })
