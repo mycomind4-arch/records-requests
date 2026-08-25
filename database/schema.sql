@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS requests(
   jurisdiction TEXT,
   status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','validated','review','approved','queued','submitted','tracking','completed','failed')),
   owner_id TEXT,
+  audit_tail_hash TEXT,
   purpose TEXT,
   scope_json TEXT,
   requested_at TEXT,
@@ -116,6 +117,20 @@ CREATE TABLE IF NOT EXISTS fulfillment_events(
   UNIQUE(provider,event_id)
 );
 
+CREATE TABLE IF NOT EXISTS fulfillment_attempts(
+  id TEXT PRIMARY KEY,
+  request_id TEXT NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
+  idempotency_key TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('pending','accepted','failed')),
+  provider TEXT NOT NULL DEFAULT 'mailmypdf',
+  provider_reference TEXT,
+  error_code TEXT,
+  error_message TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(provider,idempotency_key)
+);
+
 CREATE INDEX IF NOT EXISTS idx_items_request ON request_items(request_id);
 CREATE INDEX IF NOT EXISTS idx_comms_request_date ON communications(request_id,occurred_at);
 CREATE INDEX IF NOT EXISTS idx_evidence_request ON evidence(request_id);
@@ -123,7 +138,9 @@ CREATE INDEX IF NOT EXISTS idx_findings_request ON findings(request_id,status);
 CREATE INDEX IF NOT EXISTS idx_actions_request_due ON actions(request_id,due_at);
 CREATE INDEX IF NOT EXISTS idx_requests_status_updated ON requests(status,updated_at);
 CREATE INDEX IF NOT EXISTS idx_requests_owner_status ON requests(owner_id,status,updated_at);
+CREATE INDEX IF NOT EXISTS idx_requests_owner_updated ON requests(owner_id,updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_fulfillment_events_request ON fulfillment_events(request_id,received_at);
+CREATE INDEX IF NOT EXISTS idx_fulfillment_attempts_request ON fulfillment_attempts(request_id,created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_audit_provider_event
   ON audit_events(actor_type,actor_id,event_type)
   WHERE event_type = 'mailmypdf_webhook';
