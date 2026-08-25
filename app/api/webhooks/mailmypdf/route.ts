@@ -46,7 +46,6 @@ export async function POST(request: Request) {
       requestId: event.requestId,
       eventId: event.eventId,
       status: event.status,
-      eventId: event.eventId,
       actor: event.eventId,
       payload: event as unknown as Record<string, unknown>,
     })
