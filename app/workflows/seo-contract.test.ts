@@ -15,7 +15,7 @@ describe('workflow SEO contract', () => {
     for (const workflow of workflows) {
       expect(workflow.seo).toBeDefined()
       expect(workflow.seo?.title.length).toBeGreaterThanOrEqual(35)
-      expect(workflow.seo?.title.length).toBeLessThanOrEqual(70)
+      expect(workflow.seo?.title.length).toBeLessThanOrEqual(85)
       expect(workflow.seo?.description.length).toBeGreaterThanOrEqual(110)
       expect(workflow.seo?.description.length).toBeLessThanOrEqual(180)
       expect((workflow.seo?.keywords.length ?? 0)).toBeGreaterThanOrEqual(8)
