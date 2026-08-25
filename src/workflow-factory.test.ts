@@ -16,7 +16,7 @@ describe('records workflow factory', () => {
     intake: [{ id: 'property', label: 'Property', required: true }],
     request: {
       categories: ['violations'],
-      build: () => ({ title: 'Code enforcement', agency: 'County', items: [{ category: 'violations', description: 'Violation records' }] }),
+      build: (_input: Record<string, unknown>) => ({ title: 'Code enforcement', agency: 'County', items: [{ category: 'violations', description: 'Violation records' }] }),
     },
   }
 
