@@ -43,4 +43,45 @@ describe('code enforcement production analysis', () => {
       severity: 'warning',
     }))
   })
+
+  it('detects a referenced record type that is absent from production', () => {
+    const result = analyzeCodeEnforcementProduction(requested, [{
+      id: 'r1',
+      filename: 'case-response.pdf',
+      category: 'Case File',
+      text: 'See attached complaint COM-104 and inspection report INS-204.',
+    }])
+
+    expect(result.findings).toContainEqual(expect.objectContaining({
+      type: 'REFERENCED_RECORD_NOT_PRODUCED',
+      requestedCategoryId: 'complaints',
+      severity: 'critical',
+    }))
+  })
+
+  it('extracts and reconciles conflicting case and property identifiers', () => {
+    const result = analyzeCodeEnforcementProduction([], [
+      { id: 'r1', filename: 'case-100.pdf', text: 'Case 100 for 123 Main Street. APN 123-456.' },
+      { id: 'r2', filename: 'case-200.pdf', text: 'Case 200 for 125 Main Street. APN 999-888.' },
+    ])
+
+    expect(result.identifierReconciliation.conflicts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ field: 'caseNumbers' }),
+      expect.objectContaining({ field: 'parcelNumbers' }),
+      expect.objectContaining({ field: 'addresses' }),
+    ]))
+    expect(result.findings.filter((f) => f.type === 'IDENTIFIER_MISMATCH')).toHaveLength(3)
+  })
+
+  it('flags a long chronology gap for human review', () => {
+    const result = analyzeCodeEnforcementProduction([], [
+      { id: 'r1', filename: 'notice.pdf', text: 'Notice dated January 1, 2024.' },
+      { id: 'r2', filename: 'closure.pdf', text: 'Closure dated December 1, 2024.' },
+    ])
+
+    expect(result.findings).toContainEqual(expect.objectContaining({
+      type: 'DATE_GAP',
+      severity: 'warning',
+    }))
+  })
 })
