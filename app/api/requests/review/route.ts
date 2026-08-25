@@ -42,7 +42,8 @@ export async function POST(request: Request) {
   if (record.ownerId !== principal.subject) return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 })
 
   const parsed = parseWorkflowScope(record.scope)
-  const workflowId = typeof parsed?.workflow.workflow === 'string' ? parsed.workflow.workflow : undefined
+  if (!parsed) return NextResponse.json({ ok: false, error: 'invalid_workflow_scope' }, { status: 422 })
+  const workflowId = typeof parsed.workflow.workflow === 'string' ? parsed.workflow.workflow : undefined
 
   if (workflowId === 'code-enforcement-records') {
     const providers = getConfiguredRecordsLlmProviders()
