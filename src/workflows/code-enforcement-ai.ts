@@ -62,13 +62,13 @@ export async function buildCodeEnforcementRequestStrategy(providers: readonly Ll
   return { ...result, value: validateStrategy(result.value) }
 }
 
-/** Production-path entry point. High-impact strategy work fails closed unless two providers succeed. */
+/** Production-path entry point. High-impact strategy work fails closed unless two providers succeed and agree. */
 export async function runCodeEnforcementStrategy(input: unknown) {
   const providers = getConfiguredRecordsLlmProviders()
   if (providers.length < 2) throw new Error(`CODE_ENFORCEMENT_LLM_QUORUM_NOT_MET:${providers.length}/2`)
   return buildCodeEnforcementRequestStrategy(providers, input, {
     minimumProviders: 2,
-    agreementThreshold: 0.5,
+    agreementThreshold: 0.67,
     maxProviders: 3,
   })
 }
