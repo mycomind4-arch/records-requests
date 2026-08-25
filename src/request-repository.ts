@@ -68,26 +68,51 @@ export function canTransition(from: RequestState, to: RequestState): boolean {
   return allowedTransitions[from].includes(to)
 }
 
-async function latestAuditHash(db: D1DatabaseLike, requestId: string): Promise<string | null> {
-  const row = await db.prepare(
+async function currentAuditTail(db: D1DatabaseLike, requestId: string): Promise<string | null> {
+  const row = await db.prepare(`SELECT audit_tail_hash FROM requests WHERE id = ?`).bind(requestId).first<{ audit_tail_hash: string | null }>()
+  if (row?.audit_tail_hash) return row.audit_tail_hash
+
+  const legacy = await db.prepare(
     `SELECT event_hash FROM audit_events WHERE request_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1`,
   ).bind(requestId).first<{ event_hash: string }>()
-  return row?.event_hash ?? null
+  return legacy?.event_hash ?? null
 }
 
-async function createAuditStatement(
+async function buildAuditEvent(
   db: D1DatabaseLike,
   input: { requestId: string; eventType: string; actorType: string; actorId?: string | null; payload: Record<string, unknown>; createdAt: string },
-): Promise<D1Statement> {
-  const previousHash = await latestAuditHash(db, input.requestId)
+  previousHash: string | null,
+) {
   const eventHash = await computeAuditEventHash({ ...input, previousHash })
-  return db.prepare(
+  const statement = db.prepare(
     `INSERT INTO audit_events (id, request_id, event_type, actor_type, actor_id, payload_json, previous_hash, event_hash, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).bind(
     crypto.randomUUID(), input.requestId, input.eventType, input.actorType, input.actorId ?? null,
     JSON.stringify(input.payload), previousHash, eventHash, input.createdAt,
   )
+  return { statement, eventHash }
+}
+
+async function appendAuditEvent(
+  db: D1DatabaseLike,
+  input: { requestId: string; eventType: string; actorType: string; actorId?: string | null; payload: Record<string, unknown>; createdAt: string },
+): Promise<void> {
+  const previousHash = await currentAuditTail(db, input.requestId)
+  const { statement, eventHash } = await buildAuditEvent(db, input, previousHash)
+  const tailUpdate = db.prepare(
+    `UPDATE requests SET audit_tail_hash = ? WHERE id = ? AND audit_tail_hash IS ?`,
+  ).bind(eventHash, input.requestId, previousHash)
+
+  if (db.batch) {
+    const results = await db.batch([tailUpdate, statement])
+    if ((results[0]?.meta?.changes ?? 0) !== 1) throw new Error('Audit append conflicted with another writer')
+    return
+  }
+
+  const updateResult = await tailUpdate.run()
+  if (!updateResult.success || !(updateResult.meta?.changes)) throw new Error('Audit append conflicted with another writer')
+  await statement.run()
 }
 
 export function createD1RequestRepository(db: D1DatabaseLike): RequestStateRepository {
@@ -95,11 +120,20 @@ export function createD1RequestRepository(db: D1DatabaseLike): RequestStateRepos
     async createRequest(input: ValidatedRequest, ownerId?: string) {
       const id = crypto.randomUUID()
       const now = new Date().toISOString()
+      const { statement: auditStatement, eventHash } = await buildAuditEvent(db, {
+        requestId: id,
+        eventType: 'request_validated',
+        actorType: 'user',
+        actorId: ownerId ?? null,
+        payload: { title: input.normalizedTitle, agency: input.normalizedAgency, itemCount: input.items.length },
+        createdAt: now,
+      }, null)
+
       const statements: D1Statement[] = [db.prepare(
-        `INSERT INTO requests (id, title, agency, jurisdiction, purpose, scope_json, status, owner_id, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, 'validated', ?, ?, ?)`,
+        `INSERT INTO requests (id, title, agency, jurisdiction, purpose, scope_json, status, owner_id, audit_tail_hash, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, 'validated', ?, ?, ?, ?)`,
       ).bind(id, input.normalizedTitle, input.normalizedAgency, input.jurisdiction ?? null, input.purpose ?? null,
-        JSON.stringify({ scope: input.scope ?? null, items: input.items }), ownerId ?? null, now, now)]
+        JSON.stringify({ scope: input.scope ?? null, items: input.items }), ownerId ?? null, eventHash, now, now)]
 
       for (const item of input.items) {
         statements.push(db.prepare(
@@ -108,15 +142,7 @@ export function createD1RequestRepository(db: D1DatabaseLike): RequestStateRepos
         ).bind(crypto.randomUUID(), id, item.category, item.description, item.dateStart ?? null, item.dateEnd ?? null,
           item.custodian ?? null, item.systemHint ?? null, item.format ?? null))
       }
-
-      statements.push(await createAuditStatement(db, {
-        requestId: id,
-        eventType: 'request_validated',
-        actorType: 'user',
-        actorId: ownerId ?? null,
-        payload: { title: input.normalizedTitle, agency: input.normalizedAgency, itemCount: input.items.length },
-        createdAt: now,
-      }))
+      statements.push(auditStatement)
 
       if (db.batch) {
         const results = await db.batch(statements)
@@ -129,8 +155,7 @@ export function createD1RequestRepository(db: D1DatabaseLike): RequestStateRepos
 
     async getRequest(id: string) {
       const row = await db.prepare(
-        `SELECT id, title, agency, jurisdiction, purpose, scope_json, status, owner_id, created_at, updated_at
-         FROM requests WHERE id = ?`,
+        `SELECT id, title, agency, jurisdiction, purpose, scope_json, status, owner_id, created_at, updated_at FROM requests WHERE id = ?`,
       ).bind(id).first<Record<string, unknown>>()
       return row ? toRecord(row) : null
     },
@@ -144,20 +169,39 @@ export function createD1RequestRepository(db: D1DatabaseLike): RequestStateRepos
 
     async transition(id: string, from: RequestState, to: RequestState, actor: string) {
       if (!canTransition(from, to)) throw new Error(`Invalid request transition: ${from} -> ${to}`)
+      const current = await db.prepare(`SELECT status, audit_tail_hash FROM requests WHERE id = ?`).bind(id).first<{ status: RequestState; audit_tail_hash: string | null }>()
+      if (!current || current.status !== from) throw new Error('Request transition was not persisted; request may not exist or status changed concurrently')
+
       const now = new Date().toISOString()
-      const result = await db.prepare(`UPDATE requests SET status = ?, updated_at = ? WHERE id = ? AND status = ?`).bind(to, now, id, from).run()
-      if (!result.success || !(result.meta?.changes)) throw new Error('Request transition was not persisted; request may not exist or status changed concurrently')
-      const audit = await createAuditStatement(db, { requestId: id, eventType: 'request_transition', actorType: 'user', actorId: actor, payload: { from, to }, createdAt: now })
-      await audit.run()
+      const previousHash = current.audit_tail_hash ?? await currentAuditTail(db, id)
+      const { statement: auditStatement, eventHash } = await buildAuditEvent(db, {
+        requestId: id,
+        eventType: 'request_transition',
+        actorType: 'user',
+        actorId: actor,
+        payload: { from, to },
+        createdAt: now,
+      }, previousHash)
+      const update = db.prepare(
+        `UPDATE requests SET status = ?, audit_tail_hash = ?, updated_at = ? WHERE id = ? AND status = ? AND audit_tail_hash IS ?`,
+      ).bind(to, eventHash, now, id, from, previousHash)
+
+      if (db.batch) {
+        const results = await db.batch([update, auditStatement])
+        if ((results[0]?.meta?.changes ?? 0) !== 1) throw new Error('Request transition conflicted with another writer')
+      } else {
+        const result = await update.run()
+        if (!result.success || !(result.meta?.changes)) throw new Error('Request transition conflicted with another writer')
+        await auditStatement.run()
+      }
+
       const record = await this.getRequest(id)
       if (!record) throw new Error('Request disappeared after transition')
       return record
     },
 
     async recordFulfillmentEvent({ requestId, eventType, actor, payload }) {
-      const now = new Date().toISOString()
-      const audit = await createAuditStatement(db, { requestId, eventType, actorType: 'system', actorId: actor, payload, createdAt: now })
-      await audit.run()
+      await appendAuditEvent(db, { requestId, eventType, actorType: 'system', actorId: actor, payload, createdAt: new Date().toISOString() })
     },
 
     async recordProviderWebhookEvent({ requestId, eventId, status, actor, payload }) {
