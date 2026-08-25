@@ -7,6 +7,8 @@ describe('government communications records workflow',()=>{
     expect(request.items).toHaveLength(3)
     expect(request.items[0].description).toContain('custodians Jane Smith')
     expect(request.items[1].format).toContain('native electronic format')
+    expect(request.normalizedTitle).toContain('Government Communications')
+    expect(request.normalizedAgency).toBe('City')
   })
   it('exposes the flagship workflow contract',()=>{
     expect(governmentCommunicationsRecordsWorkflow.id).toBe('government-communications-records')
