@@ -1,3 +1,4 @@
+import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { createD1RequestRepository, type D1DatabaseLike, type RequestStateRepository } from './request-repository'
 
 const runtimeKey = '__MAILMYPDF_RECORDS_D1__'
@@ -9,6 +10,17 @@ type RuntimeGlobal = typeof globalThis & {
 export function getRequestStateRepository(): RequestStateRepository | null {
   const db = (globalThis as RuntimeGlobal)[runtimeKey]
   return db ? createD1RequestRepository(db) : null
+}
+
+export async function getRequestStateRepositoryAsync(): Promise<RequestStateRepository | null> {
+  const existing = getRequestStateRepository()
+  if (existing) return existing
+
+  const context = await getCloudflareContext({ async: true })
+  const db = (context.env as CloudflareEnv & { RECORDS_DB?: D1DatabaseLike }).RECORDS_DB
+  if (!db) return null
+  installD1RequestDatabase(db)
+  return createD1RequestRepository(db)
 }
 
 export function installD1RequestDatabase(db: D1DatabaseLike): void {
