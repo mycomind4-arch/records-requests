@@ -7,7 +7,7 @@ const groups = [
   { title: 'Start a request', items: ['public-records-request', 'foia-request'], description: 'General public records, open records, and federal FOIA workflows.' },
   { title: 'Law enforcement & courts', items: ['police-records', 'court-records'], description: 'Get the reports, filings, and case materials tied to an incident or proceeding.' },
   { title: 'Property & development', items: ['property-records', 'code-enforcement-records', 'permit-inspection-records', 'planning-records'], description: 'Request property, parcel, code, permit, inspection, zoning, and development records.' },
-  { title: 'Communications & cases', items: ['government-emails', 'case-records'], description: 'Target agency communications or build a records request around a specific case.' },
+  { title: 'Communications & cases', items: ['government-communications-records', 'case-records'], description: 'Target agency communications or build a records request around a specific case.' },
 ]
 
 export default function Home() {
@@ -22,7 +22,7 @@ export default function Home() {
     </section>
 
     <section id="workflows" className="section directorySection"><div className="eyebrow">WORKFLOW DIRECTORY</div><h2>One master directory. Many specific records jobs.</h2><p className="directoryIntro">The broad term “public records request” is only the starting point. These workflows are organized around the actual record types and jobs people search for.</p>
-      <div className="workflowGroups">{groups.map(group => <div className="workflowGroup" key={group.title}><div><h3>{group.title}</h3><p>{group.description}</p></div><div className="workflowCards">{group.items.map(slug => { const item = workflows.find(w => w.slug === slug)!; return <Link key={slug} href={`/workflows/${slug}`} className="workflowCard"><span className="workflowCategory">{item.category}</span><strong>{item.title}</strong><span>{item.description}</span><span className="workflowLink">Explore workflow →</span></Link> })}</div></div>)}</div>
+      <div className="workflowGroups">{groups.map(group => <div className="workflowGroup" key={group.title}><div><h3>{group.title}</h3><p>{group.description}</p></div><div className="workflowCards">{group.items.map(slug => { const item = workflows.find(w => w.slug === slug); if (!item) return null; return <Link key={slug} href={`/workflows/${slug}`} className="workflowCard"><span className="workflowCategory">{item.category}</span><strong>{item.title}</strong><span>{item.description}</span><span className="workflowLink">Explore workflow →</span></Link> })}</div></div>)}</div>
     </section>
 
     <section id="how" className="section"><div className="eyebrow">ONE WORKSPACE</div><h2>Every workflow follows the same evidence-first lifecycle.</h2><div className="steps"><article><b>01</b><h3>Define</h3><p>Translate the objective into records, date ranges, custodians, identifiers, formats, and exclusions.</p></article><article><b>02</b><h3>Validate</h3><p>Check agency, jurisdiction, scope, and likely searchability before submission.</p></article><article><b>03</b><h3>Track</h3><p>Preserve acknowledgements, deadlines, extensions, fees, productions, denials, and communications.</p></article><article><b>04</b><h3>Audit</h3><p>Compare what was requested against what was produced and surface evidence-backed gaps.</p></article></div></section>
