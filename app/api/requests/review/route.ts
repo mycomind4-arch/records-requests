@@ -23,15 +23,10 @@ export async function POST(request: Request) {
   if (!principal) return NextResponse.json({ ok: false, error: 'authentication_required' }, { status: 401 })
 
   let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400 })
-  }
+  try { body = await request.json() } catch { return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400 }) }
 
   const id = body && typeof body === 'object' && typeof (body as Record<string, unknown>).id === 'string'
-    ? String((body as Record<string, unknown>).id).trim()
-    : ''
+    ? String((body as Record<string, unknown>).id).trim() : ''
   if (!id) return NextResponse.json({ ok: false, error: 'request_id_required' }, { status: 422 })
 
   const repository = await getRequestStateRepositoryAsync()
@@ -47,35 +42,16 @@ export async function POST(request: Request) {
 
   if (workflowId === 'code-enforcement-records') {
     const providers = getConfiguredRecordsLlmProviders()
-    if (providers.length < 2) {
-      return NextResponse.json({ ok: false, error: 'multi_llm_quorum_unavailable', requiredProviders: 2, configuredProviders: providers.length }, { status: 503 })
-    }
-
+    if (providers.length < 2) return NextResponse.json({ ok: false, error: 'multi_llm_quorum_unavailable', requiredProviders: 2, configuredProviders: providers.length }, { status: 503 })
     try {
       const strategy = await buildCodeEnforcementRequestStrategy(providers, {
-        workflow: workflowId,
-        agency: record.agency,
-        jurisdiction: record.jurisdiction,
-        purpose: record.purpose,
-        matter: parsed.workflow,
-        requestedItems: parsed.items,
+        workflow: workflowId, agency: record.agency, jurisdiction: record.jurisdiction, purpose: record.purpose,
+        matter: parsed.workflow, requestedItems: parsed.items,
       }, { minimumProviders: 2, agreementThreshold: 0.67, maxProviders: 3 })
-
-      await repository.recordAuditEvent({
-        requestId: id,
-        eventType: 'ai_preflight_completed',
-        actor: principal.subject,
-        payload: {
-          workflowId,
-          task: 'strategy',
-          providers: strategy.providers,
-          confidence: strategy.confidence,
-          disagreements: strategy.disagreements,
-          warnings: strategy.warnings,
-          strategy: strategy.value,
-        },
-      })
-
+      await repository.recordAuditEvent({ requestId: id, eventType: 'ai_preflight_completed', actor: principal.subject, payload: {
+        workflowId, task: 'strategy', providers: strategy.providers, confidence: strategy.confidence,
+        disagreements: strategy.disagreements, warnings: strategy.warnings, strategy: strategy.value,
+      }})
       if (strategy.warnings.includes('MULTI_LLM_DISAGREEMENT_REQUIRES_REVIEW') || strategy.confidence < 0.67) {
         return NextResponse.json({ ok: false, error: 'ai_review_required', requestId: id, strategy: strategy.value, warnings: strategy.warnings, providers: strategy.providers }, { status: 409 })
       }
