@@ -68,6 +68,7 @@ const DATE_PATTERN = /\b(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{
 
 function unique(values: string[]): string[] { return [...new Set(values.map((v) => v.trim()).filter(Boolean))] }
 function matches(text: string, pattern: RegExp): string[] { pattern.lastIndex = 0; return [...text.matchAll(pattern)].map((m) => (m[1] ?? m[0]).replace(/\s+/g, ' ').trim()) }
+function matchesFull(text: string, pattern: RegExp): string[] { pattern.lastIndex = 0; return [...text.matchAll(pattern)].map((m) => m[0].replace(/\s+/g, ' ').trim()) }
 
 export function extractProductionIdentifiers(record: ProductionRecord): ExtractedProductionIdentifiers {
   const text = `${record.filename} ${record.text ?? ''}`
@@ -77,7 +78,7 @@ export function extractProductionIdentifiers(record: ProductionRecord): Extracte
     parcelNumbers: unique(matches(text, PARCEL_PATTERNS)),
     addresses: unique(matches(text, ADDRESS_PATTERN)),
     dates: unique(matches(text, DATE_PATTERN)),
-    references: unique(matches(text, REFERENCE_TARGET_PATTERN)),
+    references: unique(matchesFull(text, REFERENCE_TARGET_PATTERN)),
   }
 }
 
@@ -149,7 +150,7 @@ export function analyzeCodeEnforcementProduction(
   for (const record of records) {
     if (record.sha256) {
       const prior = seenHashes.get(record.sha256)
-      if (prior) findings.push({ id: `duplicate-${record.id}`, type: 'DUPLICATE_RECORD', severity: 'info', description: `Record appears to duplicate production record ${prior} by SHA-256.`, recordIds: [prior, record.id])
+      if (prior) findings.push({ id: `duplicate-${record.id}`, type: 'DUPLICATE_RECORD', severity: 'info', description: `Record appears to duplicate production record ${prior} by SHA-256.`, recordIds: [prior, record.id] })
       else seenHashes.set(record.sha256, record.id)
     }
     if (record.text && REFERENCE_PATTERNS.test(record.text) && REDACTION_PATTERNS.test(record.text)) findings.push({ id: `redaction-${record.id}`, type: 'UNEXPLAINED_REDACTION', severity: 'warning', description: `Record ${record.filename} contains language indicating withholding or redaction; review the stated basis and whether the underlying record is fully accounted for.`, recordIds: [record.id] })
