@@ -23,6 +23,24 @@ export type CodeEnforcementRequestStrategy = {
   followUpPriorities: string[]
 }
 
+function assertStringArray(value: unknown, key: string): string[] {
+  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) throw new Error(`CODE_ENFORCEMENT_AI_SCHEMA_INVALID:${key}`)
+  return value
+}
+
+function validateStrategy(value: unknown): CodeEnforcementRequestStrategy {
+  if (!value || typeof value !== 'object') throw new Error('CODE_ENFORCEMENT_AI_SCHEMA_INVALID:object')
+  const candidate = value as Record<string, unknown>
+  return {
+    likelyCustodians: assertStringArray(candidate.likelyCustodians, 'likelyCustodians'),
+    searchTerms: assertStringArray(candidate.searchTerms, 'searchTerms'),
+    scopeGaps: assertStringArray(candidate.scopeGaps, 'scopeGaps'),
+    overbreadthRisks: assertStringArray(candidate.overbreadthRisks, 'overbreadthRisks'),
+    identifiersToConfirm: assertStringArray(candidate.identifiersToConfirm, 'identifiersToConfirm'),
+    followUpPriorities: assertStringArray(candidate.followUpPriorities, 'followUpPriorities'),
+  }
+}
+
 export async function classifyProductionRecord(
   providers: readonly LlmProvider[],
   record: ProductionRecord,
@@ -62,5 +80,6 @@ export async function buildCodeEnforcementRequestStrategy(
   input: unknown,
   policy: MultiLlmPolicy,
 ) {
-  return runMultiLlm<CodeEnforcementRequestStrategy>(providers, 'strategy', input, policy)
+  const result = await runMultiLlm<CodeEnforcementRequestStrategy>(providers, 'strategy', input, policy)
+  return { ...result, value: validateStrategy(result.value) }
 }
