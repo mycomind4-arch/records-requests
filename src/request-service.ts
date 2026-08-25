@@ -28,7 +28,13 @@ export type ValidatedRequest = CreateRequestInput & {
 }
 
 export type RequestRepository = {
-  createRequest(input: ValidatedRequest): Promise<{ id: string }>
+  createRequest(input: ValidatedRequest, ownerId?: string): Promise<{ id: string }>
+}
+
+function cleanOptionalString(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  const cleaned = value.trim()
+  return cleaned || undefined
 }
 
 export function validateCreateRequest(input: unknown):
@@ -42,9 +48,9 @@ export function validateCreateRequest(input: unknown):
   const issues: ValidationIssue[] = []
   const title = typeof value.title === 'string' ? value.title.trim() : ''
   const agency = typeof value.agency === 'string' ? value.agency.trim() : ''
-  const jurisdiction = typeof value.jurisdiction === 'string' ? value.jurisdiction.trim() : undefined
-  const purpose = typeof value.purpose === 'string' ? value.purpose.trim() : undefined
-  const scope = typeof value.scope === 'string' ? value.scope.trim() : undefined
+  const jurisdiction = cleanOptionalString(value.jurisdiction)
+  const purpose = cleanOptionalString(value.purpose)
+  const scope = cleanOptionalString(value.scope)
   const rawItems = Array.isArray(value.items) ? value.items : []
 
   if (!title) issues.push({ field: 'title', message: 'Title is required' })
@@ -60,17 +66,22 @@ export function validateCreateRequest(input: unknown):
     const item = raw as Record<string, unknown>
     const category = typeof item.category === 'string' ? item.category.trim() : ''
     const description = typeof item.description === 'string' ? item.description.trim() : ''
+    const dateStart = cleanOptionalString(item.dateStart)
+    const dateEnd = cleanOptionalString(item.dateEnd)
     if (!category) issues.push({ field: `items.${index}.category`, message: 'Category is required' })
     if (!description) issues.push({ field: `items.${index}.description`, message: 'Description is required' })
+    if (dateStart && dateEnd && dateStart > dateEnd) {
+      issues.push({ field: `items.${index}.dateEnd`, message: 'End date cannot be before start date' })
+    }
     if (category && description) {
       items.push({
         category,
         description,
-        dateStart: typeof item.dateStart === 'string' ? item.dateStart : undefined,
-        dateEnd: typeof item.dateEnd === 'string' ? item.dateEnd : undefined,
-        custodian: typeof item.custodian === 'string' ? item.custodian.trim() : undefined,
-        systemHint: typeof item.systemHint === 'string' ? item.systemHint.trim() : undefined,
-        format: typeof item.format === 'string' ? item.format.trim() : undefined,
+        dateStart,
+        dateEnd,
+        custodian: cleanOptionalString(item.custodian),
+        systemHint: cleanOptionalString(item.systemHint),
+        format: cleanOptionalString(item.format),
       })
     }
   })
