@@ -10,6 +10,10 @@ CREATE TABLE IF NOT EXISTS requests(
   audit_tail_hash TEXT,
   purpose TEXT,
   scope_json TEXT,
+  approved_artifact_json TEXT,
+  approved_artifact_hash TEXT,
+  approved_at TEXT,
+  approved_by TEXT,
   requested_at TEXT,
   response_due_at TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -139,6 +143,7 @@ CREATE INDEX IF NOT EXISTS idx_actions_request_due ON actions(request_id,due_at)
 CREATE INDEX IF NOT EXISTS idx_requests_status_updated ON requests(status,updated_at);
 CREATE INDEX IF NOT EXISTS idx_requests_owner_status ON requests(owner_id,status,updated_at);
 CREATE INDEX IF NOT EXISTS idx_requests_owner_updated ON requests(owner_id,updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_requests_approved_artifact_hash ON requests(approved_artifact_hash);
 CREATE INDEX IF NOT EXISTS idx_fulfillment_events_request ON fulfillment_events(request_id,received_at);
 CREATE INDEX IF NOT EXISTS idx_fulfillment_attempts_request ON fulfillment_attempts(request_id,created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_audit_provider_event
