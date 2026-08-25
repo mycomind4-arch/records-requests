@@ -11,8 +11,12 @@ type RecordsCloudflareEnv = {
   RECORDS_DB?: D1DatabaseLike
 }
 
+export function getD1RequestDatabase(): D1DatabaseLike | null {
+  return (globalThis as RuntimeGlobal)[runtimeKey] ?? null
+}
+
 export function getRequestStateRepository(): RequestStateRepository | null {
-  const db = (globalThis as RuntimeGlobal)[runtimeKey]
+  const db = getD1RequestDatabase()
   return db ? createD1RequestRepository(db) : null
 }
 
