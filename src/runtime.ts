@@ -7,6 +7,10 @@ type RuntimeGlobal = typeof globalThis & {
   [runtimeKey]?: D1DatabaseLike
 }
 
+type RecordsCloudflareEnv = {
+  RECORDS_DB?: D1DatabaseLike
+}
+
 export function getRequestStateRepository(): RequestStateRepository | null {
   const db = (globalThis as RuntimeGlobal)[runtimeKey]
   return db ? createD1RequestRepository(db) : null
@@ -17,7 +21,7 @@ export async function getRequestStateRepositoryAsync(): Promise<RequestStateRepo
   if (existing) return existing
 
   const context = await getCloudflareContext({ async: true })
-  const db = (context.env as CloudflareEnv & { RECORDS_DB?: D1DatabaseLike }).RECORDS_DB
+  const db = (context.env as RecordsCloudflareEnv).RECORDS_DB
   if (!db) return null
   installD1RequestDatabase(db)
   return createD1RequestRepository(db)
