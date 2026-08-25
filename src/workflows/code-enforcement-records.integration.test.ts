@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { LlmProvider } from '../ai/multi-llm-orchestrator'
+import type { LlmProvider, LlmTask } from '../ai/multi-llm-orchestrator'
 
 const testProviders: LlmProvider[] = [
   {
     id: 'test-gemini',
-    async complete<T>(task) {
+    async complete<T>(task: LlmTask) {
       if (task !== 'strategy') throw new Error(`unexpected task: ${task}`)
       return { provider: 'gemini', model: 'test-gemini', confidence: 0.95, warnings: [], value: {
         likelyCustodians: ['Code Enforcement Department'], searchTerms: ['123 Main St', 'code enforcement case file'], scopeGaps: [], overbreadthRisks: [], identifiersToConfirm: ['case number', 'parcel/APN'], followUpPriorities: ['missing inspection records'],
@@ -13,7 +13,7 @@ const testProviders: LlmProvider[] = [
   },
   {
     id: 'test-openai',
-    async complete<T>(task) {
+    async complete<T>(task: LlmTask) {
       if (task !== 'strategy') throw new Error(`unexpected task: ${task}`)
       return { provider: 'openai', model: 'test-openai', confidence: 0.94, warnings: [], value: {
         likelyCustodians: ['Code Enforcement Department'], searchTerms: ['123 Main St', 'code enforcement case file'], scopeGaps: [], overbreadthRisks: [], identifiersToConfirm: ['case number', 'parcel/APN'], followUpPriorities: ['missing inspection records'],
