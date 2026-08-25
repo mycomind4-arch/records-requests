@@ -1,4 +1,5 @@
 import { runMultiLlm, type LlmProvider, type MultiLlmPolicy } from '../ai/multi-llm-orchestrator'
+import { getConfiguredRecordsLlmProviders } from '../ai/records-llm-providers'
 import type { ProductionRecord } from './code-enforcement-analysis'
 
 export type ExtractedCodeEnforcementFacts = {
@@ -41,45 +42,33 @@ function validateStrategy(value: unknown): CodeEnforcementRequestStrategy {
   }
 }
 
-export async function classifyProductionRecord(
-  providers: readonly LlmProvider[],
-  record: ProductionRecord,
-  policy: MultiLlmPolicy,
-) {
-  return runMultiLlm<Classification>(providers, 'classification', {
-    filename: record.filename,
-    text: record.text ?? '',
-  }, policy)
+export async function classifyProductionRecord(providers: readonly LlmProvider[], record: ProductionRecord, policy: MultiLlmPolicy) {
+  return runMultiLlm<Classification>(providers, 'classification', { filename: record.filename, text: record.text ?? '' }, policy)
 }
 
-export async function extractCodeEnforcementFacts(
-  providers: readonly LlmProvider[],
-  record: ProductionRecord,
-  policy: MultiLlmPolicy,
-) {
-  return runMultiLlm<ExtractedCodeEnforcementFacts>(providers, 'extraction', {
-    filename: record.filename,
-    text: record.text ?? '',
-  }, policy)
+export async function extractCodeEnforcementFacts(providers: readonly LlmProvider[], record: ProductionRecord, policy: MultiLlmPolicy) {
+  return runMultiLlm<ExtractedCodeEnforcementFacts>(providers, 'extraction', { filename: record.filename, text: record.text ?? '' }, policy)
 }
 
-export async function assessContradiction(
-  providers: readonly LlmProvider[],
-  left: ProductionRecord,
-  right: ProductionRecord,
-  policy: MultiLlmPolicy,
-) {
+export async function assessContradiction(providers: readonly LlmProvider[], left: ProductionRecord, right: ProductionRecord, policy: MultiLlmPolicy) {
   return runMultiLlm<{ contradictory: boolean; explanation: string }>(providers, 'contradiction', {
     left: { id: left.id, text: left.text ?? '' },
     right: { id: right.id, text: right.text ?? '' },
   }, policy)
 }
 
-export async function buildCodeEnforcementRequestStrategy(
-  providers: readonly LlmProvider[],
-  input: unknown,
-  policy: MultiLlmPolicy,
-) {
+export async function buildCodeEnforcementRequestStrategy(providers: readonly LlmProvider[], input: unknown, policy: MultiLlmPolicy) {
   const result = await runMultiLlm<CodeEnforcementRequestStrategy>(providers, 'strategy', input, policy)
   return { ...result, value: validateStrategy(result.value) }
+}
+
+/** Production-path entry point. High-impact strategy work fails closed unless two providers succeed. */
+export async function runCodeEnforcementStrategy(input: unknown) {
+  const providers = getConfiguredRecordsLlmProviders()
+  if (providers.length < 2) throw new Error(`CODE_ENFORCEMENT_LLM_QUORUM_NOT_MET:${providers.length}/2`)
+  return buildCodeEnforcementRequestStrategy(providers, input, {
+    minimumProviders: 2,
+    agreementThreshold: 0.5,
+    maxProviders: 3,
+  })
 }
