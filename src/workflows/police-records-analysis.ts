@@ -60,8 +60,21 @@ function textFor(record: PoliceProductionRecord): string {
 }
 
 function matchesCategory(record: PoliceProductionRecord, category: PoliceRequestedCategory): boolean {
-  const haystack = textFor(record).toLowerCase()
-  return category.keywords.some((keyword) => haystack.includes(keyword.toLowerCase()))
+  if (record.category?.toLowerCase() === category.id.toLowerCase()) return true
+
+  const filename = record.filename.toLowerCase()
+  if (category.keywords.some((keyword) => filename.includes(keyword.toLowerCase()))) return true
+
+  const content = record.text ?? ''
+  if (!content.trim()) return false
+
+  const keywordMatch = category.keywords.some((keyword) => content.toLowerCase().includes(keyword.toLowerCase()))
+  if (!keywordMatch) return false
+
+  // A generic response that merely points to another record is not itself proof
+  // that the referenced category was produced. Prefer explicit record metadata
+  // or a clearly named output file before counting a category as covered.
+  return !REFERENCE_PATTERNS.test(content)
 }
 
 function hasIdentifierMismatch(record: PoliceProductionRecord, identifiers: PoliceProductionIdentifiers): boolean {
@@ -109,7 +122,6 @@ export function analyzePoliceProduction(
   for (const record of records) {
     const content = textFor(record)
     if (MEDIA_PATTERNS.test(content)) mediaRecordIds.push(record.id)
-
     if (REFERENCE_PATTERNS.test(content)) referencedRecordIds.push(record.id)
 
     if (record.sha256) {
@@ -182,12 +194,5 @@ export function analyzePoliceProduction(
     })
   }
 
-  return {
-    recordsReviewed: records.length,
-    findings,
-    coveredCategoryIds,
-    missingCategoryIds,
-    mediaRecordIds,
-    referencedRecordIds,
-  }
+  return { recordsReviewed: records.length, findings, coveredCategoryIds, missingCategoryIds, mediaRecordIds, referencedRecordIds }
 }
