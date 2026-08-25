@@ -6,10 +6,13 @@ import { MAILMYPDF_HOME } from './lib/ecosystem'
 export const metadata = { title: 'Public Records Requests | Request, Track & Audit Government Records', description: 'Find the right public-records workflow, build a precise request, track agency responses, organize productions, and audit what you received.', openGraph: { title: 'Public Records Requests | Records Requests', description: 'A directory of focused workflows for requesting, tracking, and auditing government records.' } }
 
 const groups = [
-  { title: 'Start a request', items: ['public-records-request', 'foia-request'], description: 'General public records, open records, and federal FOIA workflows.' },
-  { title: 'Law enforcement & courts', items: ['police-records', 'court-records'], description: 'Get the reports, filings, and case materials tied to an incident or proceeding.' },
-  { title: 'Property & development', items: ['property-records', 'code-enforcement-records', 'permit-inspection-records', 'planning-records'], description: 'Request property, parcel, code, permit, inspection, zoning, and development records.' },
+  { title: 'Start here', items: ['public-records-request', 'foia-request', 'public-information-request', 'open-records-request', 'agency-records-request', 'government-documents-request'], description: 'General public records, open records, FOIA, public information, agency, and government documents workflows.' },
+  { title: 'Law enforcement & courts', items: ['police-records', 'police-report', 'police-report-copy', 'court-records', 'criminal-records', 'criminal-history', 'arrest-records', 'background-check-records'], description: 'Get the reports, filings, case materials, and history tied to an incident, case, or person.' },
+  { title: 'Property & development', items: ['property-records', 'permit-inspection-records', 'code-enforcement-records', 'planning-records'], description: 'Request property, parcel, code, permit, inspection, zoning, and development records.' },
+  { title: 'Vital records', items: ['birth-records', 'marriage-records', 'divorce-records', 'death-records'], description: 'Request birth, marriage, divorce, and death records from the appropriate vital records office.' },
+  { title: 'Personal records', items: ['military-records', 'medical-records', 'employment-records', 'education-records'], description: 'Request military, medical, employment, and education records held by government agencies or institutions.' },
   { title: 'Communications & cases', items: ['government-communications-records', 'case-records'], description: 'Target agency communications or build a records request around a specific case.' },
+  { title: 'Follow up & appeal', items: ['records-follow-up', 'records-denial-appeal'], description: 'Follow up on unanswered requests or appeal a records denial.' },
 ]
 
 export default function Home() {

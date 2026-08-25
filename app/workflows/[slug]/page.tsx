@@ -2,6 +2,7 @@ import { EcosystemFooter } from '@/app/components/EcosystemFooter'
 import { MAILMYPDF_HOME } from '@/app/lib/ecosystem'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { recordsWorkflows } from '@/src/workflows'
 import { workflows } from '../workflow-data'
 
 export function generateStaticParams() { return workflows.map(({ slug }) => ({ slug })) }
@@ -23,12 +24,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 }
 
+const aiWorkflowSlugs = new Set(recordsWorkflows.map((w: { id: string }) => w.id))
+
 export default async function WorkflowPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const workflow = workflows.find(item => item.slug === slug)
   if (!workflow) notFound()
 
-  const builderPath = slug === 'code-enforcement-records' || slug === 'police-records' || slug === 'planning-records' ? `/workflows/${slug}/builder` : '/dashboard'
+  const builderPath = aiWorkflowSlugs.has(slug) ? `/workflows/${slug}/builder` : '/dashboard'
   const faqs = workflow.seo?.faqs ?? []
   const related = workflows.filter(item => item.slug !== slug && (item.category === workflow.category || item.bestFor.some(value => workflow.bestFor.includes(value)))).slice(0, 3)
 
