@@ -23,9 +23,7 @@ export async function POST(request: Request) {
   const signature = request.headers.get('x-mailmypdf-signature') ?? ''
   const secret = processEnv('MAILMYPDF_WEBHOOK_SECRET')
   if (!secret) return NextResponse.json({ ok: false, error: 'webhook_secret_not_configured' }, { status: 503 })
-  if (!(await verifyFulfillmentWebhook(secret, rawBody, signature))) {
-    return NextResponse.json({ ok: false, error: 'invalid_signature' }, { status: 401 })
-  }
+  if (!(await verifyFulfillmentWebhook(secret, rawBody, signature))) return NextResponse.json({ ok: false, error: 'invalid_signature' }, { status: 401 })
 
   let event: FulfillmentWebhook
   try {
@@ -33,16 +31,13 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400 })
   }
-
-  if (!event.eventId || !event.requestId || !event.status) {
-    return NextResponse.json({ ok: false, error: 'invalid_event' }, { status: 422 })
-  }
+  if (!event.eventId || !event.requestId || !event.status) return NextResponse.json({ ok: false, error: 'invalid_event' }, { status: 422 })
 
   const repository = await getRequestStateRepositoryAsync()
   if (!repository) return NextResponse.json({ ok: false, error: 'persistence_not_configured' }, { status: 503 })
 
   try {
-    const recorded = await repository.recordFulfillmentEvent({
+    const recorded = await repository.recordProviderWebhookEvent({
       requestId: event.requestId,
       eventId: event.eventId,
       status: event.status,
@@ -56,9 +51,7 @@ export async function POST(request: Request) {
 
     const requestState = await repository.getRequest(event.requestId)
     if (!requestState) return NextResponse.json({ ok: false, error: 'request_not_found' }, { status: 404 })
-    if (requestState.status !== transition.from) {
-      return NextResponse.json({ ok: true, ignored: true, reason: `request_already_${requestState.status}`, requestId: event.requestId })
-    }
+    if (requestState.status !== transition.from) return NextResponse.json({ ok: true, ignored: true, reason: `request_already_${requestState.status}`, requestId: event.requestId })
 
     const updated = await repository.transition(event.requestId, transition.from, transition.to, event.eventId)
     return NextResponse.json({ ok: true, request: updated })
