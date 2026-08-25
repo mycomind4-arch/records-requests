@@ -60,7 +60,7 @@ export default function Home() {
             </details>
             <a className="ecosystemNav__link" href="/workflows">Workflows</a>
             <a className="ecosystemNav__link" href="#how">How It Works</a>
-            <a className="ecosystemNav__link" href="/dashboard">Pricing</a>
+            <a className="ecosystemNav__link" href="https://mailmypdf-etc.pages.dev/pricing">Pricing</a>
             <a className="ecosystemNav__link" href="/dashboard">Sign In</a>
             <a className="ecosystemNav__cta" href="/dashboard">Start Now</a>
           </nav>
@@ -102,10 +102,6 @@ export default function Home() {
 
       <section className="section featuredSection">
         <div className="eyebrow">FEATURED WORKFLOWS</div>
-        <div className="sectionHeadingRow">
-          <div><h2>Start with a common records job.</h2><p className="directoryIntro">Choose a focused starting point. The complete searchable workflow directory lives on the Workflows page.</p></div>
-          <Link className="textLink" href="/workflows">View all workflows →</Link>
-        </div>
         <WorkflowDirectory workflows={workflows.map(({ slug, title, description, category }) => ({ slug, title, description, category }))} groups={groups} />
       </section>
 
