@@ -14,6 +14,15 @@ export type Classification = {
   rationale: string
 }
 
+export type CodeEnforcementRequestStrategy = {
+  likelyCustodians: string[]
+  searchTerms: string[]
+  scopeGaps: string[]
+  overbreadthRisks: string[]
+  identifiersToConfirm: string[]
+  followUpPriorities: string[]
+}
+
 export async function classifyProductionRecord(
   providers: readonly LlmProvider[],
   record: ProductionRecord,
@@ -46,4 +55,12 @@ export async function assessContradiction(
     left: { id: left.id, text: left.text ?? '' },
     right: { id: right.id, text: right.text ?? '' },
   }, policy)
+}
+
+export async function buildCodeEnforcementRequestStrategy(
+  providers: readonly LlmProvider[],
+  input: unknown,
+  policy: MultiLlmPolicy,
+) {
+  return runMultiLlm<CodeEnforcementRequestStrategy>(providers, 'strategy', input, policy)
 }
