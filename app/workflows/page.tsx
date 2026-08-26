@@ -5,6 +5,21 @@ import WorkflowDirectory from '@/app/components/WorkflowDirectory'
 export const metadata = {
   title: 'Records Request Workflows | Public Records, FOIA, Police, Property & More',
   description: 'Search and explore focused public-records workflows for FOIA, police, property, permits, code enforcement, planning, court records, and more.',
+  alternates: { canonical: '/workflows' },
+  openGraph: {
+    title: 'Records Request Workflows | Records Requests',
+    description: 'Search and explore focused public-records workflows for FOIA, police, property, permits, code enforcement, planning, court records, and more.',
+    type: 'website',
+    siteName: 'Records Requests',
+    url: '/workflows',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Records Request Workflows — MailMyPDF' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Records Request Workflows | Records Requests',
+    description: 'Search and explore focused public-records workflows for FOIA, police, property, permits, and more.',
+    images: ['/og-image.png'],
+  },
 }
 
 const groups = [
@@ -19,7 +34,28 @@ const groups = [
 
 export default function WorkflowsPage() {
   const items = workflows.map(({ slug, title, description, category }) => ({ slug, title, description, category }))
-  return <main className="landing directoryPage">
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name: "Records Request Workflows",
+        itemListElement: workflows.map((w, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          name: w.title,
+          url: '/workflows/' + w.slug,
+        })),
+      }) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: "/" },
+          { "@type": "ListItem", position: 2, name: "Workflows", item: "/workflows" },
+        ],
+      }) }} />
+      <main className="landing directoryPage">
     <section className="directoryHero">
       <div className="eyebrow">RECORDS REQUEST WORKFLOWS</div>
       <h1>Find the records workflow that matches what you need.</h1>
@@ -28,4 +64,6 @@ export default function WorkflowsPage() {
     </section>
     <section className="section directorySection"><div className="eyebrow">FULL WORKFLOW LIBRARY</div><h2>Search the complete records-request catalog.</h2><p className="directoryIntro">Use the search box or browse by category. This is the full discovery surface; the homepage only features a curated set of common starting points.</p><WorkflowDirectory workflows={items} groups={groups} /></section>
   </main>
+    </>
+  )
 }

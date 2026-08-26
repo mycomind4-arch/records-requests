@@ -13,6 +13,14 @@ export const metadata = {
     description: 'Request, track, receive, and audit government records in one evidence-first workspace.',
     type: 'website',
     siteName: 'MailMyPDF Records Requests',
+    url: '/',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Records Requests — MailMyPDF' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Public Records Requests | MailMyPDF',
+    description: 'Request, track, receive, and audit government records in one evidence-first workspace.',
+    images: ['/og-image.png'],
   },
 }
 
@@ -42,7 +50,27 @@ const faqs = [
 
 export default function Home() {
   return (
-    <main className="landing recordsHome">
+    
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "Records Requests",
+        description: "Build precise public-records and government-records requests, track agency responses, organize productions, and audit what you actually received.",
+        url: typeof window !== 'undefined' ? window.location.origin : 'https://records.mailmypdf.com',
+        publisher: { "@type": "Organization", name: "MailMyPDF" },
+        hasPart: workflows.map((w) => ({ "@type": "WebPage", name: w.title, url: '/workflows/' + w.slug })),
+      }) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Service",
+        name: "Records Requests",
+        serviceType: "Public records request preparation and tracking",
+        provider: { "@type": "Organization", name: "MailMyPDF" },
+        description: "Build precise public-records requests in plain English, track agency responses, organize productions, and audit what you actually received.",
+        areaServed: { "@type": "Country", name: "United States" },
+      }) }} />
+      <main className="landing recordsHome">
       <header className="ecosystemNav" aria-label="MailMyPDF ecosystem navigation">
         <div className="ecosystemNav__inner">
           <a className="ecosystemNav__brand" href="/" aria-label="Records Requests home">
@@ -137,5 +165,6 @@ export default function Home() {
 
       <EcosystemFooter />
     </main>
+    </>
   )
 }
