@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { workflows } from './workflows/workflow-data'
 import { EcosystemFooter } from './components/EcosystemFooter'
 import WorkflowDirectory from './components/WorkflowDirectory'
+import { ECOSYSTEM_PRODUCTS, ECOSYSTEM_PAGE_URL, MAILMYPDF_HOME } from './lib/ecosystem'
 
 export const metadata = {
   title: 'Public Records Requests | Request, Track & Audit Government Records',
@@ -70,6 +71,30 @@ export default function Home() {
         areaServed: { "@type": "Country", name: "United States" },
       }) }} />
       <main className="landing recordsHome">
+      <header className="ecosystemNav" aria-label="MailMyPDF ecosystem navigation">
+        <div className="ecosystemNav__inner">
+          <a className="ecosystemNav__brand" href="/" aria-label="Records Requests home">
+            <span className="ecosystemNav__mark" aria-hidden="true"><span /></span>
+            <span className="ecosystemNav__wordmark">Records Requests</span>
+          </a>
+          <nav className="ecosystemNav__links" aria-label="Main navigation">
+            <a className="ecosystemNav__link" href={MAILMYPDF_HOME}>Mail a PDF</a>
+            <details className="ecosystemNav__products">
+              <summary className="ecosystemNav__link">Products <span aria-hidden="true">⌄</span></summary>
+              <div className="ecosystemNav__menu">
+                {ECOSYSTEM_PRODUCTS.map((product) => <a key={product.name} className="ecosystemNav__menuItem" href={product.href}><span>{product.name}</span><small>{product.description}</small></a>)}
+                <a className="ecosystemNav__menuAll" href={ECOSYSTEM_PAGE_URL}>Explore all products →</a>
+              </div>
+            </details>
+            <a className="ecosystemNav__link" href="/workflows">Workflows</a>
+            <a className="ecosystemNav__link" href="#how">How It Works</a>
+            <a className="ecosystemNav__link" href="https://mailmypdf-etc.pages.dev/pricing">Pricing</a>
+            <a className="ecosystemNav__link" href="/dashboard">Sign In</a>
+            <a className="ecosystemNav__cta" href="/dashboard">Start Now</a>
+          </nav>
+        </div>
+      </header>
+
       <section className="recordsHero">
         <div className="recordsHero__copy">
           <div className="eyebrow">PUBLIC RECORDS · FOIA · OPEN RECORDS</div>
