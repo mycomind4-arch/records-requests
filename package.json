@@ -17,7 +17,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@mailmypdf/pricing": "https://github.com/mycomind4-arch/mailmypdf-platform/releases/download/pricing-v0.2.0/mailmypdf-pricing-0.2.0.tgz",
+    "@mailmypdf/pricing": "https://github.com/mycomind4-arch/mailmypdf-platform/releases/download/pricing-v0.2.1/mailmypdf-pricing-0.2.0.tgz",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.507.0",
     "next": "^15.3.0",
