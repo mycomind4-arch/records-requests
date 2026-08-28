@@ -24,9 +24,9 @@ export default function EcosystemNav() {
               <a href={ECOSYSTEM_PAGE_URL} className="ecosystemNav__menuAll">Explore all products →</a>
             </div>
           </details>
-          <Link href="/" className="ecosystemNav__link">Workflows</Link>
-          <a href="#how" className="ecosystemNav__link">How It Works</a>
-          <a href="#start" className="ecosystemNav__link">Pricing</a>
+          <Link href="/workflows" className="ecosystemNav__link">Workflows</Link>
+          <Link href="/#how" className="ecosystemNav__link">How It Works</Link>
+          <a href="https://mailmypdf-etc.pages.dev/pricing" className="ecosystemNav__link">Pricing</a>
           <Link href="/dashboard" className="ecosystemNav__link">Sign In</Link>
           <Link href="/dashboard" className="ecosystemNav__cta">Start Now</Link>
         </nav>

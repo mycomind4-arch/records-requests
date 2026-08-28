@@ -55,7 +55,7 @@ export default function WorkflowsPage() {
           { "@type": "ListItem", position: 2, name: "Workflows", item: "/workflows" },
         ],
       }) }} />
-      <main className="landing directoryPage">
+      <main className="directoryPage">
     <section className="directoryHero">
       <div className="eyebrow">RECORDS REQUEST WORKFLOWS</div>
       <h1>Find the records workflow that matches what you need.</h1>

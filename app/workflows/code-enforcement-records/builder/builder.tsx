@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { MAILMYPDF_HOME } from '@/app/lib/ecosystem'
 import { EcosystemFooter } from '@/app/components/EcosystemFooter'
 import { useRouter } from 'next/navigation'
 
@@ -107,14 +106,7 @@ export function CodeEnforcementBuilder() {
 
   return (
     <main className="builder-shell">
-      <header className="landingNav">
-        <strong>My-CoMind <span>/ Code Enforcement Records</span></strong>
-        <nav>
-          <a href="/workflows/code-enforcement-records">Overview</a>
-          <a href={MAILMYPDF_HOME}>MailMyPDF →</a>
-          <a href="/dashboard">Workspace →</a>
-        </nav>
-      </header>
+      
 
       <section className="builder-wrap">
         <div className="eyebrow">CODE ENFORCEMENT RECORDS · BUILDER</div>

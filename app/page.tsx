@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { workflows } from './workflows/workflow-data'
 import { EcosystemFooter } from './components/EcosystemFooter'
 import WorkflowDirectory from './components/WorkflowDirectory'
-import { ECOSYSTEM_PRODUCTS, ECOSYSTEM_PAGE_URL, MAILMYPDF_HOME } from './lib/ecosystem'
 
 export const metadata = {
   title: 'Public Records Requests | Request, Track & Audit Government Records',
@@ -50,14 +49,13 @@ const faqs = [
 
 export default function Home() {
   return (
-    
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         "@context": "https://schema.org",
         "@type": "WebSite",
         name: "Records Requests",
         description: "Build precise public-records and government-records requests, track agency responses, organize productions, and audit what you actually received.",
-        url: typeof window !== 'undefined' ? window.location.origin : 'https://records.mailmypdf.com',
+        url: "https://records.mailmypdf.com",
         publisher: { "@type": "Organization", name: "MailMyPDF" },
         hasPart: workflows.map((w) => ({ "@type": "WebPage", name: w.title, url: '/workflows/' + w.slug })),
       }) }} />
@@ -70,36 +68,12 @@ export default function Home() {
         description: "Build precise public-records requests in plain English, track agency responses, organize productions, and audit what you actually received.",
         areaServed: { "@type": "Country", name: "United States" },
       }) }} />
-      <main className="landing recordsHome">
-      <header className="ecosystemNav" aria-label="MailMyPDF ecosystem navigation">
-        <div className="ecosystemNav__inner">
-          <a className="ecosystemNav__brand" href="/" aria-label="Records Requests home">
-            <span className="ecosystemNav__mark" aria-hidden="true"><span /></span>
-            <span className="ecosystemNav__wordmark">Records Requests</span>
-          </a>
-          <nav className="ecosystemNav__links" aria-label="Main navigation">
-            <a className="ecosystemNav__link" href={MAILMYPDF_HOME}>Mail a PDF</a>
-            <details className="ecosystemNav__products">
-              <summary className="ecosystemNav__link">Products <span aria-hidden="true">⌄</span></summary>
-              <div className="ecosystemNav__menu">
-                {ECOSYSTEM_PRODUCTS.map((product) => <a key={product.name} className="ecosystemNav__menuItem" href={product.href}><span>{product.name}</span><small>{product.description}</small></a>)}
-                <a className="ecosystemNav__menuAll" href={ECOSYSTEM_PAGE_URL}>Explore all products →</a>
-              </div>
-            </details>
-            <a className="ecosystemNav__link" href="/workflows">Workflows</a>
-            <a className="ecosystemNav__link" href="#how">How It Works</a>
-            <a className="ecosystemNav__link" href="https://mailmypdf-etc.pages.dev/pricing">Pricing</a>
-            <a className="ecosystemNav__link" href="/dashboard">Sign In</a>
-            <a className="ecosystemNav__cta" href="/dashboard">Start Now</a>
-          </nav>
-        </div>
-      </header>
-
+      <main className="recordsHome">
       <section className="recordsHero">
         <div className="recordsHero__copy">
           <div className="eyebrow">PUBLIC RECORDS · FOIA · OPEN RECORDS</div>
           <h1>Request, track &amp; audit government records.</h1>
-          <p className="lede">Describe what you are trying to find in plain English. Records Requests helps turn that objective into a precise request, track the agency response, organize the production, and identify what still needs attention.</p>
+          <p className="lede">Describe what you are trying to find in plain English. We help turn that into a precise request, track the agency response, organize the production, and identify what still needs attention.</p>
           <div className="cta">
             <Link className="primary" href="/dashboard">Start a Records Request →</Link>
             <Link className="secondary" href="/workflows">Explore Workflows</Link>
@@ -137,7 +111,7 @@ export default function Home() {
         <div className="recordsAudit__copy">
           <div className="eyebrow">THE DIFFERENCE</div>
           <h2>Getting files is not the same as getting a complete production.</h2>
-          <p>Records Requests keeps the original request, agency response, produced records, references, redactions, and unresolved categories together so you can see what still needs attention.</p>
+          <p>We keep the original request, agency response, produced records, references, redactions, and unresolved categories together so you can see what still needs attention.</p>
         </div>
         <div className="auditGrid">
           <div>Unanswered categories</div><div>Referenced records not produced</div><div>Missing or duplicate pages</div><div>Redaction questions</div><div>Search or custodian gaps</div><div>Timeline anomalies</div>

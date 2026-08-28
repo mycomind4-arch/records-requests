@@ -8,7 +8,6 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 type Workflow = { slug: string; title: string; description: string; category: string }
 type Group = { title: string; items: string[]; description: string }
 
-const PLACEHOLDER_IMAGE = 'https://media.base44.com/images/public/6a8bd310dfdf9ad92cf26415/06e033fed_generated_image.png'
 const FEATURED_SLUGS = ['public-records-request', 'code-enforcement-records', 'property-records', 'police-records', 'permit-inspection-records', 'planning-records']
 
 export default function WorkflowDirectory({ workflows, groups }: { workflows: Workflow[]; groups: Group[] }) {
@@ -33,7 +32,7 @@ export default function WorkflowDirectory({ workflows, groups }: { workflows: Wo
       {featuredVisible.length > 0 && <>
         <div className="featuredCarouselViewport">
           {featuredVisible.map((workflow) => <Link key={workflow.slug} href={`/workflows/${workflow.slug}`} className="featuredWorkflowCard">
-            <div className="featuredWorkflowCard__media"><img src={PLACEHOLDER_IMAGE} alt="" aria-hidden="true" /><span>{workflow.category}</span></div>
+            <div className="featuredWorkflowCard__media"><span>{workflow.category}</span></div>
             <div className="featuredWorkflowCard__body"><h3>{workflow.title}</h3><p>{workflow.description}</p><span className="featuredWorkflowCard__link">Explore workflow <ArrowRight size={14} /></span></div>
           </Link>)}
         </div>
@@ -63,7 +62,7 @@ export default function WorkflowDirectory({ workflows, groups }: { workflows: Wo
               const item = workflows.find((w) => w.slug === slug)
               if (!item) return null
               return <Link key={slug} href={`/workflows/${slug}`} className="workflowCard workflowCardPremium">
-                <div className="workflowCardImage"><img src={PLACEHOLDER_IMAGE} alt="" aria-hidden="true" /><span>{item.category}</span></div>
+                <div className="workflowCardImage"><span>{item.category}</span></div>
                 <div className="workflowCardBody"><strong>{item.title}</strong><span>{item.description}</span><span className="workflowLink">Explore workflow →</span></div>
               </Link>
             })}

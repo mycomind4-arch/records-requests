@@ -3,10 +3,17 @@ import { MAILMYPDF_HOME } from "../lib/ecosystem"
 import { getRequestStateRepositoryAsync } from '../../src/runtime'
 import { getApprovalPrincipal } from '../../src/authorization-runtime'
 import type { RequestState } from '../../src/request-repository'
+import Link from 'next/link'
 
 const activeStates: RequestState[] = ['draft', 'validated', 'review', 'approved', 'queued', 'submitted', 'tracking']
 
 export const dynamic = 'force-dynamic'
+
+export const metadata = {
+  title: 'Dashboard — Records Requests',
+  description: 'Track your records requests, deadlines, productions, and unresolved gaps.',
+  robots: { index: false, follow: false },
+}
 
 export default async function Dashboard() {
   const principal = await getApprovalPrincipal()
@@ -23,7 +30,8 @@ export default async function Dashboard() {
         <nav className="nav">
           <a className="active" href="#">Command Center</a>
           <a href="#requests">Requests</a>
-          <a href="#how">How it works</a>
+          <a href="/#how">How it works</a>
+          <a href="/workflows">Workflows</a>
           <a href={MAILMYPDF_HOME}>MailMyPDF →</a>
         </nav>
       </aside>
@@ -35,7 +43,7 @@ export default async function Dashboard() {
             <div className="muted">Track requests, deadlines, productions, and unresolved records gaps.</div>
           </div>
           <div className="actions">
-            <a className="btn primary" href="/workflows/code-enforcement-records/builder">New code enforcement request</a>
+            <Link className="btn primary" href="/workflows">Start a request →</Link>
           </div>
         </div>
 
@@ -59,8 +67,8 @@ export default async function Dashboard() {
               <h2>What records are you looking for?</h2>
               <div className="muted">Start in plain English. A workflow will turn your objective into precise record categories, dates, and custodians.</div>
               <div className="composer-row">
-                <input placeholder="e.g. Everything the county has about code enforcement at a property" />
-                <a className="btn primary" href="/workflows/code-enforcement-records/builder">Build request</a>
+                <input placeholder="e.g. Everything the county has about code enforcement at a property" readOnly onClick={() => window.location.href = '/workflows'} />
+                <Link className="btn primary" href="/workflows">Browse workflows →</Link>
               </div>
             </section>
 
@@ -96,8 +104,8 @@ export default async function Dashboard() {
                 {requests.length === 0 ? (
                   <div className="empty-state">
                     <h3>No requests yet</h3>
-                    <p>Create your first records request through a workflow and it will appear here.</p>
-                    <a className="btn primary" href="/workflows/code-enforcement-records/builder">Start a code enforcement request →</a>
+                    <p>Start with a description of the records you're looking for. We'll help turn it into a precise request.</p>
+                    <Link className="btn primary" href="/workflows">Start a records request →</Link>
                   </div>
                 ) : (
                   requests.map((r) => (

@@ -1,5 +1,4 @@
 import { EcosystemFooter } from '@/app/components/EcosystemFooter'
-import { MAILMYPDF_HOME } from '@/app/lib/ecosystem'
 import Link from 'next/link'
 
 const faqs = [
@@ -72,10 +71,8 @@ export default function CodeEnforcementRecordsLanding() {
     ],
   }
 
-  return <main className="landing workflowPage">
+  return <main className="workflowPage">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-    <header className="landingNav"><strong>My-CoMind <span>/ Records Requests</span></strong><nav><Link href="/">All workflows</Link><a href="/#how">How it works</a><a href={MAILMYPDF_HOME}>MailMyPDF →</a><Link href="/dashboard">Workspace →</Link></nav></header>
-
     <section className="workflowHero">
       <div className="eyebrow">PROPERTY & CODE ENFORCEMENT · PUBLIC RECORDS</div>
       <h1>Code Enforcement Records Request</h1>

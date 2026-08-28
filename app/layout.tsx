@@ -16,7 +16,6 @@ export const metadata = {
     type: 'website',
     siteName: 'Records Requests',
     url: siteUrl,
-    // TODO: Create /og-image.png (1200x630) — no OG image asset exists yet
     images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Records Requests — MailMyPDF' }],
   },
   twitter: {
@@ -29,5 +28,13 @@ export const metadata = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html lang="en"><body><EcosystemNav />{children}</body></html>
+  return (
+    <html lang="en">
+      <body>
+        <a href="#main-content" className="skip-link">Skip to main content</a>
+        <EcosystemNav />
+        <div id="main-content">{children}</div>
+      </body>
+    </html>
+  )
 }
