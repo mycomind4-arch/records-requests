@@ -121,7 +121,7 @@ export const workflows: Workflow[] = [
     ),
   },
   {
-    slug: 'permit-inspection-records',
+    slug: 'property-permit-records',
     title: 'Permit & Inspection Records',
     category: 'Property',
     intent: 'permit records request',
