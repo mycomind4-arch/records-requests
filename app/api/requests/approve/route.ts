@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getRequestStateRepositoryAsync } from '../../../../src/runtime'
 import { canApproveWithRole, getApprovalPrincipal } from '../../../../src/authorization-runtime'
 import { hashApprovedArtifact, type ApprovedArtifact } from '../../../../src/approved-artifact'
+import { canTransition } from '../../../../src/platform/runtime-bridge'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +35,9 @@ export async function POST(request: Request) {
   const requestRecord = await repository.getRequest(id)
   if (!requestRecord) return NextResponse.json({ ok: false, error: 'request_not_found' }, { status: 404 })
   if (requestRecord.ownerId !== principal.subject && !principal.roles.includes('admin')) return NextResponse.json({ ok: false, error: 'approval_forbidden' }, { status: 403 })
+  // State machine guard — only allow approval from "review" state
+  if (requestRecord.status !== 'review') return NextResponse.json({ ok: false, error: 'cannot_approve', message: `Request cannot be approved from status ${requestRecord.status}` }, { status: 409 })
+  if (!canTransition(requestRecord.status, 'approved')) return NextResponse.json({ ok: false, error: 'invalid_transition', message: `State machine rejects transition from ${requestRecord.status} to approved` }, { status: 409 })
 
   const recipientAddress = [recipient.address1, recipient.address2, `${recipient.city}, ${recipient.state} ${recipient.postalCode}`].filter(Boolean).join('\n')
   const artifact: ApprovedArtifact = {

@@ -1,3 +1,14 @@
+/**
+ * Audit chain — tamper-evident event recording for request lifecycle.
+ *
+ * The SHA-256 computation and chain verification are delegated to
+ * @mailmypdf/runtime. The canonicalization of the audit payload is
+ * records-requests-specific (deterministic JSON ordering) and is
+ * kept locally for domain compatibility.
+ */
+
+import { GENESIS_HASH, verifyAuditChain, type AuditChainEntry } from "@mailmypdf/runtime";
+
 function canonicalize(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value)
   if (Array.isArray(value)) return `[${value.map(canonicalize).join(',')}]`
@@ -34,3 +45,7 @@ export async function computeAuditEventHash(input: {
 }): Promise<string> {
   return sha256Hex(canonicalAuditPayload(input))
 }
+
+// Re-export the runtime's chain verification for consumers that want
+// to verify a full chain of AuditChainEntry records
+export { GENESIS_HASH, verifyAuditChain, type AuditChainEntry };

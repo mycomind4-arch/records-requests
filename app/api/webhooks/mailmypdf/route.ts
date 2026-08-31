@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getRequestStateRepositoryAsync } from '../../../../src/runtime'
 import { verifyFulfillmentWebhook, type FulfillmentWebhook } from '../../../../src/fulfillment-webhook'
 import type { RequestState } from '../../../../src/request-repository'
+import { idempotencyStore, webhookKey } from '../../../../src/platform/runtime-bridge'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,6 +34,11 @@ export async function POST(request: Request) {
   }
   if (!event.eventId || !event.requestId || !event.status) return NextResponse.json({ ok: false, error: 'invalid_event' }, { status: 422 })
 
+  // Idempotency guard — runtime contract prevents double-processing
+  const idempKey = webhookKey(event.eventId)
+  const claimed = await idempotencyStore.reserve(idempKey)
+  if (!claimed) return NextResponse.json({ ok: true, deduplicated: true, requestId: event.requestId })
+
   const repository = await getRequestStateRepositoryAsync()
   if (!repository) return NextResponse.json({ ok: false, error: 'persistence_not_configured' }, { status: 503 })
 
@@ -54,6 +60,7 @@ export async function POST(request: Request) {
     if (requestState.status !== transition.from) return NextResponse.json({ ok: true, ignored: true, reason: `request_already_${requestState.status}`, requestId: event.requestId })
 
     const updated = await repository.transition(event.requestId, transition.from, transition.to, event.eventId)
+    await idempotencyStore.store(idempKey, { processed: true });
     return NextResponse.json({ ok: true, request: updated })
   } catch (error) {
     return NextResponse.json({ ok: false, error: 'webhook_processing_failed', message: error instanceof Error ? error.message : String(error) }, { status: 409 })

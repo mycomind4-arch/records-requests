@@ -1,3 +1,11 @@
+/**
+ * Fulfillment webhook — HMAC-SHA256 signing and verification.
+ *
+ * Delegates the cryptographic operations to @mailmypdf/runtime's
+ * signWebhook/verifyWebhook, keeping the local type aliases
+ * for backward compatibility.
+ */
+
 export type FulfillmentWebhook = {
   eventId: string
   requestId: string
@@ -8,31 +16,14 @@ export type FulfillmentWebhook = {
   payload?: Record<string, unknown>
 }
 
-function toBytes(value: string): Uint8Array {
-  return new TextEncoder().encode(value)
-}
+import { signWebhook, verifyWebhook } from "@mailmypdf/runtime";
 
-function hex(bytes: Uint8Array): string {
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
-}
-
+/** Sign a webhook body with HMAC-SHA256 (runtime contract). */
 export async function signFulfillmentWebhook(secret: string, rawBody: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    'raw',
-    toBytes(secret) as BufferSource,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  )
-  const signature = await crypto.subtle.sign('HMAC', key, toBytes(rawBody) as BufferSource)
-  return hex(new Uint8Array(signature))
+  return signWebhook(secret, rawBody);
 }
 
+/** Verify a webhook signature in constant time (runtime contract). */
 export async function verifyFulfillmentWebhook(secret: string, rawBody: string, signature: string): Promise<boolean> {
-  if (!secret || !signature) return false
-  const expected = await signFulfillmentWebhook(secret, rawBody)
-  if (expected.length !== signature.length) return false
-  let mismatch = 0
-  for (let i = 0; i < expected.length; i++) mismatch |= expected.charCodeAt(i) ^ signature.charCodeAt(i)
-  return mismatch === 0
+  return verifyWebhook(secret, rawBody, signature);
 }
