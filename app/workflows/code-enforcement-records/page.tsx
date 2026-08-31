@@ -1,4 +1,5 @@
 import { EcosystemFooter } from '@/app/components/EcosystemFooter'
+import { PricingBadge } from '@/app/components/PricingBadge'
 import Link from 'next/link'
 
 const faqs = [
@@ -77,6 +78,7 @@ export default function CodeEnforcementRecordsLanding() {
       <div className="eyebrow">PROPERTY & CODE ENFORCEMENT · PUBLIC RECORDS</div>
       <h1>Code Enforcement Records Request</h1>
       <p className="lede">Build a precise request for property violations, complaints, inspections, notices, citations, photographs, permits, communications, and enforcement history—then review and mail it from your workspace.</p>
+      <div style={{ margin: '12px 0' }}><PricingBadge workflowId="code-enforcement-records" /></div>
       <div className="cta"><Link className="primary" href="/workflows/code-enforcement-records/builder">Build a Code Enforcement Records Request →</Link><Link className="secondary" href="/">Browse every records workflow</Link></div>
       <div className="trust">Search-ready identifiers · Specific record categories · Evidence-first production review · MailMyPDF fulfillment</div>
     </section>

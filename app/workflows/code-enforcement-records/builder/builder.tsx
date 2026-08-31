@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { EcosystemFooter } from '@/app/components/EcosystemFooter'
+import { PricingBadge } from '@/app/components/PricingBadge'
 import { useRouter } from 'next/navigation'
 
 const CATEGORIES = [
@@ -317,6 +318,10 @@ export function CodeEnforcementBuilder() {
           <section className="builder-card">
             <h2>Review before creating the request</h2>
             <p>This creates a draft in your workspace. Nothing is mailed until you explicitly approve and send it.</p>
+
+            <div style={{ margin: '16px 0' }}>
+              <PricingBadge workflowId="code-enforcement-records" />
+            </div>
 
             <div className="review-grid">
               <div>

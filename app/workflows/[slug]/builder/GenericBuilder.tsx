@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { MAILMYPDF_HOME } from '@/app/lib/ecosystem'
 import { EcosystemFooter } from '@/app/components/EcosystemFooter'
+import { PricingBadge } from '@/app/components/PricingBadge'
 import Link from 'next/link'
 
 type Field = { id: string; label: string; required?: boolean; helpText?: string; type?: string }
@@ -127,6 +128,9 @@ export default function GenericBuilder({ config }: { config: WorkflowConfig }) {
         <div className="builder-card" style={{ padding: 28, marginTop: 16 }}>
           <h2>3. Request readiness</h2>
           <p>Review what you have before creating the request. Missing items can be added later.</p>
+          <div style={{ margin: '12px 0' }}>
+            <PricingBadge workflowId={config.slug} />
+          </div>
           <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
             {readiness.map(item => (
               <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14 }}>
